@@ -482,7 +482,7 @@ let last=performance.now();
 function loop(n){const dt=Math.min(.05,(n-last)/1000);last=n;document.getElementById('inviteInGame').style.display=online&&state!=='menu'?'block':'none';document.getElementById('chatInGame').style.display='none';document.getElementById('settingsBtn').style.display=state==='menu'?'block':'none';if(online!=='guest')upd(dt);if(online==='host'&&net&&state!=='menu'&&(snapT-=dt)<=0){snapT=.05;net.emit('st',snap()).catch(()=>{})}draw();requestAnimationFrame(loop)}
 reset();requestAnimationFrame(loop);const oldAcctButton=document.getElementById('b5');if(oldAcctButton){oldAcctButton.onclick=acctMenu;oldAcctButton.textContent=acct?'👤 '+acct.name:'👤 Conta (entrar / criar)';}document.getElementById('settingsBtn').onclick=()=>{settingsMenu();if(settings.music&&settings.musicVolume>0)startMusic()};document.getElementById('chatInGame').onclick=chatMenu;acctInit();devAsk();
 </script><audio id="ianga-bg-music" preload="auto" loop playsinline>
-  <source src="/__l5e/assets-v1/de092c31-7289-4656-a029-cfadf293339d/musica.mp3" type="audio/mpeg">
+  <source src="/__l5e/assets-v1/b297eb8c-9cbb-4ad0-b5a3-c35a274920c1/pero-online.mp3" type="audio/mpeg">
 </audio><script>
 // Pequena trava global para impedir cliques acidentais em vários botões seguidos.
 ;
