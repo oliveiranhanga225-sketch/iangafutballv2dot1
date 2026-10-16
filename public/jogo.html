@@ -461,7 +461,7 @@ async function friendsMenu(){
   if(peerId===myId||a.some(x=>(x.profileId||x.peer)===peerId||x.nick.toLowerCase()===nick.toLowerCase())){ovShow('<p>Esse ID já está na lista ou é seu próprio ID.</p>',[['Voltar',friendsMenu]],true);return}
   if(a.length>=FRIEND_LIMIT){ovShow('<p>A lista atingiu o limite de '+FRIEND_LIMIT+' amigos.</p>',[['Voltar',friendsMenu]],true);return}
   try{await syncFriendInbox();await friendRpc('if_send',{_id:peerId.toUpperCase(),_name:nick,_kind:'friend',_payload:{}});ovShow('<h2>Solicitação enviada</h2><p>O pedido foi entregue para '+esc(nick)+'.</p>',[['Voltar',friendsMenu]],true)}catch(e){ovShow('<p>Não foi possível enviar. Confira o nick e o ID de perfil do amigo.</p>',[['Voltar',friendsMenu]],true)}
- }],['🚩 Denunciar usuário',moderationMenu],['Criar sala',()=>onlineTournamentMenu()],['Voltar',()=>{if(online&&state!=='menu')tov.style.display='none';else document.getElementById('b4').click()}]],true);
+ }],['🚩 Denunciar usuário',moderationMenu],['Voltar',()=>{if(online&&state!=='menu')tov.style.display='none';else document.getElementById('b4').click()}]],true);
  tov.querySelectorAll('[data-fdel]').forEach(b=>b.onclick=()=>{const a=friendsLoad();a.splice(+b.dataset.fdel,1);friendsSave(a);friendsMenu()});
 }
 function onlineTournamentMenu(){
