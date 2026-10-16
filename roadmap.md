@@ -1,0 +1,12 @@
+# Correções solicitadas
+- [x] Mover o atraso do saque para o lançamento, mantendo a duração e os bots.
+- [x] Ajustar orientação do contador vermelho no X1 local conforme PC/celular.
+- [x] Exigir Iniciar dos dois jogadores nas partidas compartilhadas e mostrar Rodada/Etapa sem parênteses; início verificado com duas contas.
+- [x] Corrigir adicionar amigos e entregar convites pelo servidor sem depender da conexão direta entre aparelhos.
+- [x] Testar amizade aceita e convite aceito com a conexão direta desativada.
+- [x] Restaurar escolha de fundo nas configurações e padrão claro.
+- [x] Trocar favicon pela nova imagem.
+- [x] Escolher Carreira, Torneio ou X1 antes de criar sala; iniciar com dois jogadores.
+- [x] Convidar pela lista sem sair da sala; aceite leva à mesma sala.
+- [x] Iniciar carreira com teste por jogador e manter resultados na competição compartilhada.
+- [x] Verificar fundo, convite real entre duas contas, início e gravação dos testes até a liga com bots; uma temporada completa não foi jogada.

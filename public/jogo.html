@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<script>
+window.IANGA_SB=async function(path,opt){opt=opt||{};const K='sb_publishable_nlvnUamNtY3oCv2tFe8EEQ_yJS-9NuF';const r=await fetch('https://fbzhklglohqnclsqiggy.supabase.co/rest/v1/'+path,Object.assign({},opt,{headers:Object.assign({apikey:K,'Content-Type':'application/json',Prefer:'return=representation'},opt.headers||{})}));const t=await r.text();if(!r.ok)throw new Error(t);return t?JSON.parse(t):null};
+window.IANGA_DB={doc:function(p){const s=p.split('/'),col=s[0],id=s[1];return{
+ set:async function(v){if(col!=='ianga_profiles')return;await IANGA_SB('rpc/ip_save',{method:'POST',body:JSON.stringify({_pid:id,_pin:String(v.pin||''),_data:v})})},
+ get:async function(){return{exists:false,data:function(){return null}}},
+ delete:async function(){if(col!=='ianga_profiles')return;let pin='';try{const q=profs.find(x=>x.pid===id);pin=q?String(q.pin||''):''}catch(e){}await IANGA_SB('rpc/ip_delete',{method:'POST',body:JSON.stringify({_pid:id,_pin:pin})})}}},
+ collection:function(){return{get:async function(){return{docs:[]}}}}};
+window.IANGA_FETCH=async function(name,pw){try{const a=await IANGA_SB('rpc/ip_salts',{method:'POST',body:JSON.stringify({_name:name})});for(const c of (a||[])){const hs=[];try{hs.push(await kdf(c.salt,pw))}catch(e){}try{hs.push(await sha(c.salt+pw))}catch(e){}hs.push(fallbackHash('ianga-kdf-fallback:'+c.salt+':'+pw));for(const h of hs){const d=await IANGA_SB('rpc/ip_fetch',{method:'POST',body:JSON.stringify({_pid:c.pid,_pin:h})});if(d&&d.pid){const i=profs.findIndex(x=>x.pid===d.pid);if(i>=0)profs[i]=d;else profs.push(d);break}}}}catch(e){}};
+</script>
+<link rel="icon" type="image/png" href="/favicon.png?v=20261014">
+<link rel="apple-touch-icon" href="/favicon.png?v=20261014">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ianga Futball</title>
+<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3efe2;--fg:#2d2a26;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1f1e1b;--fg:#ece6d6}}
+:root[data-theme="dark"]{--bg:#1f1e1b;--fg:#ece6d6}
+html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--fg);font-family:'Patrick Hand','Comic Sans MS',cursive;overscroll-behavior:none}
+body{height:100dvh;min-height:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+canvas{width:min(100vw,400px,calc((100dvh - 108px)*.625));max-height:calc(100dvh - 108px);height:auto;aspect-ratio:400/640;touch-action:none;display:block;border-radius:10px;user-select:none;flex:0 1 auto}
+@media(max-height:560px){canvas{width:min(100vw,400px,calc((100dvh - 72px)*.625));max-height:calc(100dvh - 72px)}#hint{font-size:14px;min-height:24px;padding:2px 8px}}
+
+#hint{font-size:17px;text-align:center;padding:6px 12px;min-height:44px;max-width:420px}
+#menu{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:var(--bg);z-index:5}
+#menu h1{font-size:42px;margin:0 0 12px;font-weight:normal}
+#menu button,#back{font:inherit;font-size:24px;padding:14px 22px;border:3px solid var(--fg);border-radius:14px;background:#e3eed3;color:#2d2a26;cursor:pointer;min-width:290px}
+.ov{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:flex-start;gap:14px;background:var(--bg);z-index:6;text-align:center;padding:72px 16px 24px;font-size:20px;overflow:auto;box-sizing:border-box}.ov h2,.ov h3,.ov p{margin:4px 0;font-weight:normal}.ov label{display:flex;align-items:center;justify-content:center;gap:10px;max-width:94vw}.ov select,.ov input[type=range],.ov input[type=checkbox]{min-width:0;width:auto}.ov select{font:inherit;font-size:20px;padding:6px;border-radius:10px}.ov button,.ov input{font:inherit;font-size:22px;padding:12px 20px;border:3px solid var(--fg);border-radius:14px;background:#e3eed3;color:#2d2a26;min-width:260px;text-align:center}
+#settingsBtn{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:10px;z-index:7;min-width:0!important;width:48px;height:48px;padding:4px!important;font-size:27px!important;border:2px solid var(--fg);border-radius:14px;background:#e3eed3;color:#2d2a26;cursor:pointer}#menu #b5{display:block}#menu{padding:65px 12px 12px;box-sizing:border-box;overflow:auto}#menu button{max-width:94vw}#inviteInGame{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));right:8px;min-width:0;font:inherit;font-size:16px;padding:4px 10px;border:2px solid var(--fg);border-radius:10px;background:#e3eed3;color:#2d2a26;z-index:4;display:none}#back{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:8px;min-width:0;font-size:16px;padding:4px 12px;z-index:4;display:none}
+
+/* Tema escuro grafite, no estilo das interfaces escuras do navegador */
+:root[data-theme="dark"]{color-scheme:dark;--bg:#202124;--fg:#e8eaed}
+:root[data-theme="dark"] body,:root[data-theme="dark"] .ov{background:var(--bg);color:var(--fg)}
+:root[data-theme="dark"] #menu button,:root[data-theme="dark"] #back,:root[data-theme="dark"] #settingsBtn,:root[data-theme="dark"] #inviteInGame,:root[data-theme="dark"] #chatInGame,:root[data-theme="dark"] .ov button,:root[data-theme="dark"] .ov input:not([type="range"]),:root[data-theme="dark"] .ov select{background:#303134!important;color:#e8eaed!important;border-color:#5f6368!important}
+:root[data-theme="dark"] .ov input[type="range"]{accent-color:#8ab4f8}
+.ov input[type="range"]{display:block;width:min(92vw,360px)!important;min-width:0!important;max-width:100%;height:30px;padding:0!important;margin:5px auto 12px;accent-color:#527b45;cursor:pointer}
+.ov label{display:flex;flex-direction:column;align-items:center;gap:4px;width:min(94vw,390px);margin:4px auto}
+.ov label:has(input[type="checkbox"]){flex-direction:row;justify-content:center}
+.ov input[type="checkbox"]{min-width:0!important;width:24px;height:24px;padding:0!important}
+button{transition:transform .08s ease,filter .08s ease}
+button:active{transform:scale(.97);filter:brightness(.92)}
+
+ .click-spark{position:fixed;z-index:99999;pointer-events:none;width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.82);box-shadow:0 0 4px rgba(255,255,255,.35);animation:spark-fade .24s ease-out forwards}
+@keyframes spark-fade{0%{opacity:.62;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.45)}}
+.lobby-friends{background:var(--bg);color:var(--fg);border:3px solid var(--fg);border-radius:14px;max-width:min(90vw,420px);font:22px 'Patrick Hand','Comic Sans MS',cursive}.lobby-friends::backdrop{background:var(--dialog-scrim)}:root{--dialog-scrim:#0006}.friend-row{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:12px 0}.lobby-friends button{font:inherit;padding:8px 14px;background:var(--bg);color:var(--fg);border:2px solid var(--fg);border-radius:10px}button:disabled{opacity:.45;cursor:not-allowed}
+.ianga-toasts{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:100000;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}.ianga-toast{background:var(--bg);color:var(--fg);border:2px solid var(--fg);border-radius:12px;padding:6px 14px;font:18px 'Patrick Hand','Comic Sans MS',cursive;box-shadow:0 2px 8px #0003;animation:spark-fade 3.2s ease-in reverse both;animation:none}
+#otChatLog{width:min(90vw,420px);max-height:30vh;overflow:auto;text-align:left;border:1px solid var(--fg);border-radius:10px;padding:6px 10px;box-sizing:border-box;font-size:18px}#otChatLog p{margin:3px 0}.ot-chat-bar{display:flex;gap:8px;width:min(90vw,420px)}.ov .ot-chat-bar input{min-width:0;flex:1;padding:8px 10px;font-size:18px}.ov .ot-chat-bar button{min-width:0;padding:8px 14px;font-size:18px}
+</style></head><body>
+<canvas id="c" width="400" height="640"></canvas>
+<div id="hint"></div>
+<div id="menu"><h1>⚽ Ianga Futball</h1><button id="b4">🌐 Sala online</button><button id="b6">🏆 Torneios (online)</button><button id="b7">👥 Amigos</button><button id="b3">⚽ Campanha</button><button id="b1">1 jogador (contra bot)</button><button id="b2">2 jogadores (mesma tela)</button><button id="b5">👤 Conta (entrar / criar)</button></div>
+<button id="settingsBtn" aria-label="Configurações" title="Configurações">⚙️</button><button id="back">Menu</button><button id="inviteInGame">👥 Convidar</button><button id="chatInGame" style="display:none;position:fixed;top:calc(54px + env(safe-area-inset-top,0px));right:8px;z-index:4;min-width:0;font:inherit;font-size:16px;padding:4px 10px;border:2px solid var(--fg);border-radius:10px;background:#e3eed3;color:#2d2a26">💬 Chat</button>
+<div id="tour" class="ov"></div>
+<script>
+const cv=document.getElementById('c'),g=cv.getContext('2d');
+const KO=45,W=400,H=640,L=130,R=270,T=50,B=590,M=320,RR=26,ZR=75,JR=46,BR=38,SP=125;
+const FONT="'Patrick Hand','Comic Sans MS',cursive",BLUE='#2b6cb0',RED='#c53030',INK='#2d2a26';
+const BASE={p:{jx:65,jy:545,bx:335,by:545},c:{jx:335,jy:95,bx:65,by:95}};
+const P={x:200,y:480,mv:false},C={x:200,y:160,mv:false},pl={p:P,c:C},COL={p:BLUE,c:RED};
+const ctl={p:{id:null,vx:0,vy:0,ax:0,ay:-.6},c:{id:null,vx:0,vy:0,ax:0,ay:.6}},keys={};
+let S,server,state,msg,timer,ball,mode=1,locked=false,cpuWait=0,cpuTgt,cpuDelay=0,wp=null,wpT=0,cpuAim={x:200,y:480},cpuTry=0,cpuRead=0,cpuNx=0,sil=null,silT=0,coolT=0;
+const cl=(v,a,b)=>Math.max(a,Math.min(b,v)),humans=()=>online?['p']:mode===2?['p','c']:['p'];
+const nm=s=>mode===2?(s==='p'?'Azul':'Vermelho'):(s==='p'?'Você':oppName||'Claude');
+function reset(){S={p:0,c:0};server='p';state='menu';ball=null;msg='';locked=false;window.__svShot=null;P.x=200;P.y=480;C.x=200;C.y=160;
+for(const s of['p','c']){const c=ctl[s];c.id=null;c.vx=c.vy=0;c.ax=0;c.ay=s==='p'?-.6:.6}hint()}
+function hint(){const h=document.getElementById('hint');
+document.getElementById('menu').style.display=state==='menu'?'flex':'none';document.getElementById('back').style.display=state==='menu'?'none':'block';
+h.textContent=state==='menu'||state==='point'?'':state==='over'?'Toque no campo para voltar ao menu':
+state==='flight'?'Quem recebe: fique em cima da sombra da bola na hora em que ela cai no chão!':
+mode===1&&server==='c'?'O Claude vai sacar. Use o analógico para se mover livremente!':
+!locked?nm(server)+': ande com o analógico até o seu lugar e aperte SACAR (depois fica parado). Quem recebe anda livre.':
+nm(server)+' parado: incline o analógico para mirar (inclinação = força) e aperte CHUTAR.';if(pc)h.textContent=h.textContent.replace('incline o analógico para mirar (inclinação = força)','mova a mira com as teclas de direção').replace(/analógico/g,'teclado')}
+function kick(o,tx,ty,k){const d=Math.hypot(tx-o.x,ty-o.y)||1,e=d*.08*Math.sqrt(Math.random()),a=Math.random()*6.283;
+tx+=Math.cos(a)*e;ty+=Math.sin(a)*e;const dd=Math.hypot(tx-o.x,ty-o.y);
+ball={sx:o.x,sy:o.y,tx,ty,t:0,dur:.35+dd/1100,pk:30+dd*.2,k,gx:o.x,gy:o.y,z:0};state='flight';
+const dist=Math.hypot(tx-C.x,ty-C.y),sur=cl((dist-40)/200,0,1),bad=Math.random()<(.08+sur*.85)*(1.5-lvl),a2=Math.random()*6.283,er=bad?55+Math.random()*40:Math.random()*8;cpuTgt={x:tx+Math.cos(a2)*er,y:ty+Math.sin(a2)*er};cpuDelay=.28-lvl*.12+sur*.3;hint()}
+function end(w,txt){S[w]++;const l=w==='p'?'c':'p';if(txt[0]==='D')st[w].def++;else if(txt[0]==='P')st[w].dir++;else st[l].out++;server=w==='p'?'c':'p';msg=txt+' '+(mode===2?(w==='p'?'Ponto azul':'Ponto vermelho'):(w==='p'?'Ponto seu':'Ponto do Claude'));
+if(S[w]>=goal)msg+=' - '+(mode===2?nm(w).toUpperCase():w==='p'?'VOCÊ':'CLAUDE')+' VENCEU! 🏆';state='point';timer=1.7;hint()}
+function clampS(o,s){o.x=cl(o.x,L+10,R-10);o.y=s==='p'?cl(o.y,M+14,B-8):cl(o.y,T+8,M-14)}
+function go(o,s,tx,ty,sp,dt){const dx=tx-o.x,dy=ty-o.y,d=Math.hypot(dx,dy),k=Math.min(d,sp*dt);if(d>1){o.x+=dx/d*k;o.y+=dy/d*k;o.mv=true}clampS(o,s)}
+function vec(s){if(pc){const L2=mode===2&&!online,sets=L2?[s==='p'?KM.wasd:KM.arr]:s==='p'?[KM.wasd,KM.arr]:[];let kx=0,ky=0;for(const k of sets){kx+=(keys[k[1]]?1:0)-(keys[k[0]]?1:0);ky+=(keys[k[3]]?1:0)-(keys[k[2]]?1:0)}
+if(kx||ky){const m=Math.hypot(kx,ky);return[kx/m,ky/m]}}return[ctl[s].vx,ctl[s].vy]}
+function cpuMove(o,dt){
+if(state==='flight'&&ball.k==='p'){cpuDelay-=dt;if(cpuDelay<=0)go(o,'c',cpuTgt.x,cpuTgt.y,75+60*lvl,dt);return}
+let hx=200,hy=M-100;if(locked&&server==='p'){const c=ctl.p,ty=P.y+c.ay*430;hx=200+cl((P.x+c.ax*430-200)*cpuRead,-45,45)+cpuNx;hy=cl(M-100+(ty-(M-100))*cpuRead,T+40,M-40)}silT-=dt;if(silT<=0){silT=1.5+Math.random()*2.5;sil=Math.random()<.35?{x:L+10+Math.random()*(R-L-20),y:T+20+Math.random()*(M-T-50)}:null}wp=sil||{x:hx+Math.sin(performance.now()/700)*8,y:hy};
+go(o,'c',wp.x,wp.y,75,dt)}
+function pickAim(){let x,y,n=0;do{x=L+10+Math.random()*(R-L-20);y=M+30+Math.random()*(B-M-50)}while(Math.hypot(x-P.x,y-P.y)<130&&++n<10);
+if(Math.random()<.15){if(Math.random()<.5)x=Math.random()<.5?L-10-Math.random()*25:R+10+Math.random()*25;else y=B+8+Math.random()*30}cpuAim={x,y}}
+function aimPt(){if(state!=='serve')return null;if(window.__svShot)return{x:window.__svShot.tx,y:window.__svShot.ty};if(mode===1&&server==='c')return cpuAim;{const o=pl[server],c=ctl[server];return{x:o.x+c.ax*430,y:o.y+c.ay*430}}}
+function sd(px,py,ax,ay,bx,by){const dx=bx-ax,dy=by-ay,t=cl(((px-ax)*dx+(py-ay)*dy)/(dx*dx+dy*dy||1),0,1);return Math.hypot(px-(ax+dx*t),py-(ay+dy*t))}
+function hit(o,bx,by){if(o===C&&mode===2&&!online&&!pc){bx=2*o.x-bx;by=2*(o.y-3)-by}const s=o.mv?Math.sin(performance.now()/90)*5:0,x=o.x,y=o.y;if(Math.hypot(bx-x,by-(y-16))<17.5)return true;
+return[[0,-9,0,6],[-9,-4+s/2,0,-7],[0,-7,9,-4-s/2],[0,6,-6+s,17],[0,6,6-s,17]].some(q=>sd(bx,by,x+q[0],y+q[1],x+q[2],y+q[3])<10.5)}
+const TN=['Raios','Tubarões','Águias','Lobos','Dragões','Panteras','Falcões','Cobras'],LG=['América','Europa','Ásia','África'],DV=['Div 4','Div 3','Div 2','Div 1'],RN=['Quartas','Semifinal','Final'],tov=document.getElementById('tour');
+let tour=null,lvl=.5,goal=5,oppName='',net=null,online=null,snapT=0,got=false,currentRoomId='';const st={p:{dir:0,def:0,out:0},c:{dir:0,def:0,out:0}};
+function scorer(x,n,col,d){g.strokeStyle=col;g.lineWidth=3;g.fillStyle='#fffdf5';g.beginPath();g.arc(x,296,8,0,7);g.fill();g.stroke();g.beginPath();g.moveTo(x,304);g.lineTo(x,336);g.moveTo(x,336);g.lineTo(x-8,356);g.moveTo(x,336);g.lineTo(x+8,356);g.moveTo(x,312);g.lineTo(x+d*24,290);g.moveTo(x,312);g.lineTo(x-d*14,332);g.stroke();fingers(x+d*24,290,n,col);txt(nm(d>0?'p':'c'),x,374,14,col)}
+function ovShow(h,bs,nr,nm0){if(!nr)lastOv=[h,bs||[]];tov.innerHTML=h;(bs||[]).forEach(([l,f])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{if(b.disabled)return;b.disabled=true;b.style.opacity='.65';b.style.pointerEvents='none';tov.style.display='none';f()};tov.appendChild(b)});if(!nm0){const m=document.createElement('button');m.textContent='Menu';m.onclick=()=>{tov.style.display='none';leaveNet();reset()};tov.appendChild(m)}tov.style.display='flex'}
+const saveT=()=>{if(acct){acct.tour=tour;dbSave()}else try{localStorage.setItem('fr1',JSON.stringify(tour))}catch(e){}};
+const TEAM_POOL=['Raios','Tubarões','Águias','Lobos','Dragões','Panteras','Falcões','Cobras','Furacões','Cometas','Trovões','Leões','Estrelas','Muralhas','Cirurgiões','Centelhas','Titãs','Vendavais','Guardiões','Relâmpagos','Jaguares','Araras','Pumas','Atléticos','Tempestade','Vulcões','Corujas','Onças','Nômades','Fantasma'];
+function makeTable(t){
+ const friendNames=(()=>{try{return friendsLoad().map(f=>'Amigo: '+String(f.nick).slice(0,16)).filter(n=>n!=='Amigo: '+String(acct?.name||''))}catch(e){return[]}})();
+ const shuffledFriends=friendNames.sort(()=>Math.random()-.5);
+ const friendCount=Math.min(shuffledFriends.length,Math.random()<.35?0:Math.min(3,1+Math.floor(Math.random()*3)));
+ const chosenFriends=shuffledFriends.slice(0,friendCount);
+ const pool=TEAM_POOL.filter(n=>n!==t.team&&!chosenFriends.includes(n)).sort(()=>Math.random()-.5);
+ const names=[...chosenFriends,...pool].slice(0,11).sort(()=>Math.random()-.5);
+ return [{name:t.team,played:0,w:0,d:0,l:0,gf:0,ga:0,pts:0},...names.map(name=>({name,played:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}))]
+}
+function resultRow(a,b,sa,sb){a.played++;b.played++;a.gf+=sa;a.ga+=sb;b.gf+=sb;b.ga+=sa;if(sa>sb){a.w++;a.pts+=3;b.l++}else if(sb>sa){b.w++;b.pts+=3;a.l++}else{a.d++;b.d++;a.pts++;b.pts++}}
+function sortedTable(t){return [...(t.table||[])].sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf||a.name.localeCompare(b.name))}
+function newSeason(){tour.season++;tour.phase='div';tour.round=0;tour.br=null;tour.cupRound=0;tour.table=makeTable(tour);tour.playedOpps=[];tour.pendingClub=null;saveT()}
+function clubOptions(t,rank,forced){const pool=TEAM_POOL.filter(n=>n!==t.team).sort(()=>Math.random()-.5);const rating=cl((13-rank)/12+(t.div*.04),.15,.95);return pool.slice(0,3).map((name,i)=>({name:name+' '+LG[t.lg],rating:cl(rating+(Math.random()-.5)*.38,.15,.98)}))}
+function offseason(reason,rank,forced=false){const t=tour,perf=(13-rank)/12,expected=.43+t.div*.07,under=perf<expected-.22;const options=clubOptions(t,rank,forced);t.pendingClub={reason,rank,options,forced,under};
+ let h='<h2>Fim da temporada '+t.season+'</h2><p>'+reason+'</p><p>Classificação: <b>'+rank+'º lugar</b> · '+t.team+'</p>';
+ if(under){const best=options.slice().sort((a,b)=>b.rating-a.rating)[0];h+='<p>Seu rendimento ficou abaixo do esperado. Para não desperdiçar seu potencial, um clube que combina melhor com seu momento fez uma proposta: <b>'+esc(best.name)+'</b>.</p>';ovShow(h,[['Aceitar proposta',()=>startNextSeason(best.name)],['Ver outras propostas',()=>showOffers(options)],['Permanecer mesmo assim',()=>startNextSeason(t.team)]]);}
+ else {h+='<p>Seu rendimento foi avaliado em relação às expectativas da divisão. Você pode permanecer ou considerar uma nova proposta; a avaliação não determina tudo, porque o desempenho também tem variações difíceis de prever.</p>';ovShow(h,[['Permanecer no '+t.team,()=>startNextSeason(t.team)],['Trocar de clube',()=>showOffers(options)]])}
+ saveT()}
+function showOffers(options){const t=tour;const bs=options.map(o=>[o.name+' · nível '+Math.round(o.rating*100),()=>startNextSeason(o.name)]);bs.push(['Voltar',()=>offseason(t.pendingClub.reason,t.pendingClub.rank,t.pendingClub.forced)]);ovShow('<h2>Propostas de clubes</h2><p>Escolha um clube para a próxima temporada. A força dos times varia, então nenhuma proposta garante sucesso.</p>',bs)}
+function startNextSeason(team){if(!tour)return;tour.team=team||tour.team;newSeason();saveT();ovShow('<h2>Nova temporada</h2><p>Você seguirá com <b>'+esc(tour.team)+'</b> na '+DV[tour.div]+'. A temporada '+tour.season+' começa agora.</p>',[['Começar temporada',nextMatch],['Ver tabela',()=>chart('tab','br')]])}
+function newTour(){tour={season:1,phase:'test',lg:0,div:0,round:0,trophies:0};ovShow('<h2>Carreira de ligas</h2><p>Primeiro vem uma partida-teste (até 3 pontos). Depois, você disputa uma liga de 12 times em tabela de pontos corridos. Na Divisão 1, os oito primeiros se classificam para o mata-mata: quartas, semifinais e final.</p>',[['Jogar partida-teste',nextMatch]])}
+function nextMatch(){const t=tour,te=t.phase==='test';if(te){t.opp={name:'Treino',lvl:.45}}else if(t.phase==='div'){
+ if(!t.table||t.table.length!==12){t.table=makeTable(t);t.round=0}if(t.round>=11){finishLeague();return nextMatch()}
+ const sorted=sortedTable(t),oppIndex=t.round+1,opp=t.table[oppIndex];t.opp={name:opp.name,lvl:cl(.35+t.div*.13+(opp.pts/Math.max(1,opp.played*3))*.24+(Math.random()-.5)*.30,.22,.97)};
+ }else if(t.phase==='cup'){
+ const names=['Quartas de final','Semifinal','Final'];const pool=t.qualifiers||[];const op=t.cupOpps?.[t.cupRound]||{name:pool[(t.cupRound+1)%pool.length]?.name||'Rival classificado',strength:.6};t.opp={name:op.name,lvl:cl(op.strength+(t.div*.035)+(Math.random()-.5)*.24,.3,.99)};
+ }else{t.opp={name:'Treino',lvl:.45}}
+ oppName=t.opp.name;lvl=t.opp.lvl;goal=te?3:5;saveT();start(1,true)}
+function finishLeague(){const t=tour,ranked=sortedTable(t),myRank=ranked.findIndex(x=>x.name===t.team)+1;let reason='Você terminou em '+myRank+'º lugar na '+DV[t.div]+'.';
+ if(t.div===3){if(myRank<=8){t.phase='cup';t.cupRound=0;t.qualifiers=ranked.slice(0,8).map(x=>({name:x.name,strength:cl(.42+x.pts/Math.max(1,x.played*3)*.45+Math.random()*.12,.35,.94)}));t.qualifiers[0]={name:t.team,strength:cl(.35+(13-myRank)*.05,.35,.9)};const bracketPool=t.qualifiers.filter(q=>q.name!==t.team).sort(()=>Math.random()-.5);
+ t.cupOpps=[0,1,2].map(i=>{const q=bracketPool[i]||t.qualifiers[(i+1)%t.qualifiers.length];return{name:q.name,strength:q.strength}});saveT();ovShow('<h2>Fim da liga</h2><p>'+reason+'</p><p>🏆 Você se classificou para o torneio da Divisão 1: quartas, semifinais e final.</p>',[['Disputar quartas',nextMatch],['Ver tabela',()=>chart('tab','br')]]);return}
+ } else if(myRank<=2){t.div=Math.min(3,t.div+1);reason+=' Você conquistou o acesso para '+DV[t.div]+'.'} else if(myRank>=11&&t.div>0){t.div=Math.max(0,t.div-1);reason+=' Você foi rebaixado para '+DV[t.div]+'.'}
+ offseason(reason,myRank,myRank>=11&&t.div<3)}
+function tourEnd(){if(window.OT?.test){window.otFinishTest();return}const t=tour,win=S.p>=goal,s=st.p;let h='<h2>'+(win?'Vitória':'Derrota')+' '+S.p+' x '+S.c+'</h2>',b='Próxima partida';
+ if(t.phase==='test'){const n=Math.max(1,S.p),pr=s.dir/n>=.5?'Atacante':s.def/n>=.4?'Defensor':s.out<=1?'Preciso':'Equilibrado';t.prof=pr;t.div=win?(S.p-S.c>=2?2:1):0;t.lg=Math.floor(Math.random()*4);t.team=({Atacante:'Raios',Defensor:'Muralhas',Preciso:'Cirurgiões',Equilibrado:'Estrelas'})[pr]+' '+LG[t.lg];t.phase='div';t.round=0;t.table=makeTable(t);t.playedOpps=[];h+='<p>Perfil: <b>'+pr+'</b> · Time: <b>'+t.team+'</b></p><p>Você começa na '+DV[t.div]+' da Liga '+LG[t.lg]+'. São 11 rodadas, com 12 times e pontos corridos.</p>';b='Começar a liga'}
+ else if(t.phase==='div'){
+ const opp=t.table[t.round+1],me=t.table[0];resultRow(me,opp,S.p,S.c);t.playedOpps.push(opp.name);
+ // Simula uma rodada para os outros dez times; resultados têm variação imprevisível.
+ const rest=t.table.slice(1).filter(x=>x!==opp).sort(()=>Math.random()-.5);for(let i=0;i+1<rest.length;i+=2){const a=rest[i],c=rest[i+1],base=.5+t.div*.04+(Math.random()-.5)*.6,sa=Math.floor(Math.random()*6*base),sb=Math.floor(Math.random()*6*(1-base));resultRow(a,c,sa,sb)}
+ t.round++;h+='<p>Rodada '+t.round+' de 11 · '+t.team+' '+S.p+' x '+S.c+' '+opp.name+'</p><p>Posição atual: '+(sortedTable(t).findIndex(x=>x.name===t.team)+1)+'º lugar.</p>';
+ if(t.round>=11){saveT();ovShow(h,[['Ver tabela',()=>chart('tab','br')],['Fechar temporada',()=>finishLeague()]]);return}
+ }
+ else if(t.phase==='cup'){
+ const names=['Quartas de final','Semifinal','Final'];if(!win){h+='<p>Eliminado em '+names[t.cupRound]+'.</p>';saveT();offseason('Você foi eliminado nas '+names[t.cupRound]+'.',sortedTable(t).findIndex(x=>x.name===t.team)+1,false);return}else if(t.cupRound<2){h+='<p>Você avançou! Próxima fase: '+names[t.cupRound+1]+'.</p>';t.cupRound++;b='Jogar '+names[t.cupRound]}else{t.trophies=(t.trophies||0)+1;h+='<h3>🏆 CAMPEÃO DO TORNEIO DA DIVISÃO 1!</h3>';saveT();offseason('Você foi campeão do torneio da Divisão 1!',1,false);return}
+ }
+ h+='<p>Temporada '+t.season+' · '+t.team+' · '+DV[t.div]+' · Troféus: '+(t.trophies||0)+'</p>';saveT();ovShow(h,[[b,nextMatch],['📊 Tabela / torneio',()=>chart(t.phase==='cup'?'br':'tab','br')]])}
+function leaveNet(){if(net){try{net.leave()}catch(e){}}net=null;online=null;got=false}
+function snap(){const r=v=>Math.round(v*100)/100;return{s:state,v:server,l:locked?1:0,S:[S.p,S.c],P:[P.x|0,P.y|0,P.mv?1:0],C:[C.x|0,C.y|0,C.mv?1:0],m:msg,b:ball?[ball.gx|0,ball.gy|0,ball.z|0]:0,q:window.__svShot?[performance.now()-window.__svT,window.__svShot.tx,window.__svShot.ty]:null,a:[r(ctl.p.ax),r(ctl.p.ay),r(ctl.c.ax),r(ctl.c.ay)]}}
+function applySnap(d){if(!d||!d.S||!d.P||!d.C||!d.a)return;if(!got){got=true;mode=2;tov.style.display='none'}window.__svShot=d.q?{s:d.v==='p'?'c':'p',tx:W-d.q[1],ty:H-d.q[2]}:null;if(d.q)window.__svT=performance.now()-d.q[0];
+const sv2=d.v==='p'?'c':'p',ch=state!==d.s||server!==sv2||locked!==!!d.l;state=d.s;server=sv2;locked=!!d.l;S.p=d.S[1];S.c=d.S[0];P.x=W-d.C[0];P.y=H-d.C[1];P.mv=!!d.C[2];C.x=W-d.P[0];C.y=H-d.P[1];C.mv=!!d.P[2];msg=(d.m||'').replace(/azul|vermelho|AZUL|VERMELHO/g,t=>({azul:'vermelho',vermelho:'azul',AZUL:'VERMELHO',VERMELHO:'AZUL'})[t]);ball=d.b?{gx:W-d.b[0],gy:H-d.b[1],z:d.b[2]}:null;ctl.p.ax=-d.a[2];ctl.p.ay=-d.a[3];ctl.c.ax=-d.a[0];ctl.c.ay=-d.a[1];if(ch)hint()}
+async function roomJoin(code,host){
+ if(!host)currentRoomId=code;
+ const bail=m=>{leaveNet();ovShow('<h2>Sala online</h2><p>'+m+'</p>',[['Voltar às salas',()=>document.getElementById('b4').click()],['Jogar 2 jogadores (mesma tela)',()=>start(2)],['Jogar contra o bot',()=>start(1)]])};
+ if(!acct)return bail('Entre ou crie uma conta do Ianga Futball. Não precisa de conta Claude.');
+ try{
+  if(!window.Peer){await new Promise((resolve,reject)=>{const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=resolve;sc.onerror=()=>reject(new Error('Não foi possível carregar a conexão online.'));document.head.appendChild(sc)});}
+  const peer=new Peer(); let conn=null, handlers={}, pending=[];
+  const makeNet=()=>({emit:(t,d)=>{if(!conn||!conn.open)return Promise.reject(new Error('O outro jogador ainda não conectou.'));conn.send({type:t,data:d});return Promise.resolve()},on:(t,f)=>{handlers[t]=f},leave:()=>{try{conn&&conn.close()}catch(e){}try{peer.destroy()}catch(e){}}});
+  const attach=c=>{conn=c;c.on('open',()=>{pending.forEach(x=>{try{conn.send(x)}catch(e){}});pending=[]});c.on('data',m=>{if(m&&handlers[m.type])handlers[m.type]({data:m.data,isMe:false})});c.on('close',()=>{if(online)ovShow('<h2>Sala online</h2><p>O outro jogador saiu da sala.</p>',[['Voltar',()=>{leaveNet();document.getElementById('b4').click()}]])});};
+  if(host){
+   const id='fr'+Math.random().toString(36).slice(2,9);currentRoomId=id;
+   peer.destroy();
+   const hp=new Peer(id); let opened=false;
+   await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('O serviço de conexão demorou demais. Tente novamente.')),15000);hp.on('open',()=>{opened=true;clearTimeout(timer);resolve()});hp.on('error',e=>{clearTimeout(timer);reject(e)})});
+   const oldLeave=()=>{try{conn&&conn.close()}catch(e){}try{hp.destroy()}catch(e){}};
+   net={emit:(t,d)=>{if(!conn||!conn.open)return Promise.resolve();conn.send({type:t,data:d});return Promise.resolve()},on:(t,f)=>{handlers[t]=f},leave:oldLeave};
+   online='host';got=false;
+   hp.on('connection',c=>{
+    // Conexões adicionais são usadas como canal de sinalização para amizade; não derruba a partida ativa.
+    if(!conn){attach(c);return;}
+    c.on('open',()=>{});
+    c.on('data',m=>{
+      if(!m||m.type!=='inp'||!m.data||!m.data.hello||!m.data.hello.friendRequest)return;
+      const d=m.data.hello;
+      if(state!=='menu'||online!=='host'){try{c.send({type:'st',data:{friendRejected:true,reason:'busy'}});c.close()}catch(e){}return;}
+      if(window.__invitePromptOpen){try{c.send({type:'st',data:{friendRejected:true,reason:'busy'}});c.close()}catch(e){}return;}
+      window.__invitePromptOpen=true;
+      const requestNick=esc(String(d.nick||'Jogador').slice(0,16));
+      const requestId=String(d.profileId||'');
+      ovShow('<h2>👥 Solicitação de amizade</h2><p><b>'+requestNick+'</b> quer adicionar você como amigo.</p>',[
+        ['Aceitar amizade',()=>{window.__invitePromptOpen=false;const a=friendsLoad();if(!a.some(x=>x.profileId===requestId||(x.nick||'').toLowerCase()===String(d.nick||'').toLowerCase())){a.push({nick:String(d.nick||'Jogador').slice(0,16),peer:String(d.roomId||''),profileId:requestId});friendsSave(a)}try{c.send({type:'st',data:{friendAccepted:true,nick:acct?.name||'Jogador',profileId:acct?.publicId||'',roomId:String(currentRoomId||'')}});setTimeout(()=>{try{c.close()}catch(e){}},500)}catch(e){}ovShow('<p>Amizade aceita.</p>',[['OK',friendsMenu]],true)}],
+        ['Recusar',()=>{window.__invitePromptOpen=false;try{c.send({type:'st',data:{friendRejected:true}});c.close()}catch(e){}ovShow('<p>Solicitação recusada.</p>',[['OK',friendsMenu]],true)}]
+      ],true);
+    });
+    c.on('close',()=>{if(window.__invitePromptOpen){window.__invitePromptOpen=false;}});
+    c.on('error',()=>{try{c.close()}catch(e){}});
+  });
+   net.on('inp',m=>{if(online!=='host')return;const d=m.data||{};if(d.chat&&d.chat.nick){const it={nick:String(d.chat.nick).slice(0,16),text:cleanChat(d.chat.text)};if(!blocked().some(n=>n.toLowerCase()===it.nick.toLowerCase()))chatLog.push(it);net.emit('st',{chat:chatLog.slice(-40)}).catch(()=>{});return}if(d.hello&&d.hello.friendRequest&&state==='menu'&&online==='host'&&!window.__invitePromptOpen){window.__invitePromptOpen=true;const requestNick=esc(String(d.hello.nick||'Jogador').slice(0,16));const requestId=String(d.hello.profileId||'');ovShow('<h2>👥 Solicitação de amizade</h2><p><b>'+requestNick+'</b> quer adicionar você como amigo.</p>',[['Aceitar amizade',()=>{window.__invitePromptOpen=false;const a=friendsLoad();if(!a.some(x=>x.peer===String(d.hello.roomId||'')||x.nick.toLowerCase()===String(d.hello.nick||'').toLowerCase())){a.push({nick:String(d.hello.nick||'Jogador').slice(0,16),peer:String(d.hello.roomId||''),profileId:requestId});friendsSave(a)}if(conn)conn.send({type:'st',data:{friendAccepted:true,nick:acct?.name||'Jogador',profileId:acct?.publicId||''}});ovShow('<p>Amizade aceita.</p>',[['OK',friendsMenu]],true)}],['Recusar',()=>{window.__invitePromptOpen=false;if(conn)conn.send({type:'st',data:{friendRejected:true}});ovShow('<p>Solicitação recusada.</p>',[['OK',friendsMenu]],true)}]],true);return;}if(d.hello&&state==='menu'&&online==='host'&&!window.__invitePromptOpen){
+ window.__invitePromptOpen=true;
+ const joiningNick=esc(String(d.hello.nick||'Jogador').slice(0,16));
+ ovShow('<h2>🎮 Convite para partida</h2><p><b>'+joiningNick+'</b> quer entrar na sua sala.</p><p>Escolha aceitar e o tipo de partida.</p>',
+ [['Aceitar · X1',()=>{window.__invitePromptOpen=false;tov.style.display='none';if(net)net.emit('st',{inviteAccepted:true,game:'x1'}).catch(()=>{});start(2)}],
+  ['Aceitar · Torneio',()=>{window.__invitePromptOpen=false;tov.style.display='none';if(net)net.emit('st',{inviteAccepted:true,game:'tournament'}).catch(()=>{});onlineTournamentMenu()}],
+  ['Recusar',()=>{window.__invitePromptOpen=false;if(conn){try{conn.send({type:'st',data:{inviteRejected:true}});conn.close()}catch(e){}}leaveNet();currentRoomId='';document.getElementById('b4').click()}]],true);
+}if(d.x!==undefined){ctl.c.vx=cl(+d.x||0,-1,1);ctl.c.vy=cl(+d.y||0,-1,1);ctl.c.kb=!!d.k}if(d.b)press('c')});
+   net.on('st',m=>{if(online==='guest'){
+ if(m.data&&m.data.inviteRejected){ovShow('<h2>Convite recusado</h2><p>O dono da sala recusou o convite.</p>',[['Voltar',()=>{leaveNet();document.getElementById('b4').click()}]]);return}
+ if(m.data&&m.data.inviteAccepted){tov.style.display='none';if(m.data.game==='tournament'){ovShow('<h2>Torneio online</h2><p>O dono aceitou o convite para torneio. O modo de torneio online completo depende de um servidor compartilhado.</p>',[['Voltar',()=>{leaveNet();document.getElementById('b4').click()}]]);return}return}
+ if(m.data&&Array.isArray(m.data.chat)){chatLog=m.data.chat.filter(x=>x&&x.nick&&x.text&&!blocked().some(n=>n.toLowerCase()===String(nick||'').toLowerCase())).slice(-40);const snapData={...m.data};delete snapData.chat;applySnap(snapData)}else applySnap(m.data)
+}});
+   ovShow('<h2>Sala criada!</h2><p>Anfitrião: <b>'+esc(acct?.name||'Jogador')+'</b></p><p>ID da sala:</p><h2>'+id+'</h2><p>Escolha o modo antes de começar.</p>',[['⚽ Escolher X1 online',()=>{if(net)net.emit('st',{roomModeChosen:'x1'}).catch(()=>{});start(2)}],['🏆 Escolher torneio',()=>ovShow('<h2>🏆 Torneio</h2><p>O modo torneio online ainda não está implementado como partida sincronizada nesta versão. A sala continua aberta.</p>',[['Voltar à sala',()=>ovShow('<h2>Sala criada!</h2><p>ID da sala:</p><h2>'+id+'</h2>',[['⚽ X1 online',()=>start(2)],['👥 Convidar amigos',friendsMenu],['Cancelar sala',()=>{leaveNet();currentRoomId='';document.getElementById('b4').click()}]])]],true)],['Copiar ID',()=>{if(navigator.clipboard)navigator.clipboard.writeText(id).catch(()=>{});}],['👥 Convidar amigos',friendsMenu],['Cancelar sala',()=>{leaveNet();currentRoomId='';document.getElementById('b4').click()}]]);
+  }else{
+   peer.on('open',()=>{conn=peer.connect(code,{reliable:true});attach(conn);conn.on('open',()=>{online='guest';got=false;net=makeNet();net.on('st',m=>{if(online==='guest'){if(m.data&&Array.isArray(m.data.chat)){chatLog=m.data.chat.filter(x=>x&&x.nick&&x.text&&!blocked().some(n=>n.toLowerCase()===String(x.nick).toLowerCase())).slice(-40);const snapData={...m.data};delete snapData.chat;applySnap(snapData)}else applySnap(m.data)}});net.on('inp',m=>{});ovShow('<h2>Conectado!</h2><p>Entrando na partida...</p>');net.emit('inp',{hello:{nick:String(acct?.name||'Jogador').slice(0,16),profileId:String(acct?.publicId||'')}}).catch(()=>{})})});
+   await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Não achei essa sala. Confira o código e tente novamente.')),20000);peer.on('error',e=>{clearTimeout(timer);reject(e)});peer.on('connection',()=>{});const check=setInterval(()=>{if(online==='guest'&&net&&got){clearTimeout(timer);clearInterval(check);resolve()}},250);});
+  }
+ }catch(e){bail((e&&e.message)||'Não foi possível conectar. Confira a internet e tente novamente.')}
+}
+setInterval(()=>{if(online==='guest'&&net&&got){const v=vec('p');net.emit('inp',{x:-v[0],y:-v[1],k:pc?1:0}).catch(()=>{})}},60);
+let dbx=null,uid=null,acct=null,profs=[],pinFail=0,pinLock=0;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const fallbackHash=s=>{let h1=0x811c9dc5,h2=0x9e3779b9;for(let i=0;i<s.length;i++){h1=Math.imul(h1^s.charCodeAt(i),0x01000193);h2=Math.imul(h2+s.charCodeAt(i),0x85ebca6b);h2^=h2>>>13}return (h1>>>0).toString(16).padStart(8,'0')+(h2>>>0).toString(16).padStart(8,'0')};
+const sha=async s=>{try{if(globalThis.crypto?.subtle)return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('')}catch(e){}return fallbackHash('ianga-sha-fallback:'+s)};
+const okTour=t=>t&&['test','div','cup','wc'].includes(t.phase)?{...t,season:cl(t.season|0,1,9999),phase:t.phase,lg:cl(t.lg|0,0,3),div:cl(t.div|0,0,3),round:cl(t.round|0,0,11),trophies:cl(t.trophies|0,0,9999),team:String(t.team||'').slice(0,40),prof:String(t.prof||'').slice(0,20),table:Array.isArray(t.table)?t.table.slice(0,12).map(x=>({name:String(x.name||'Time').slice(0,40),played:cl(x.played|0,0,11),w:cl(x.w|0,0,11),d:cl(x.d|0,0,11),l:cl(x.l|0,0,11),gf:cl(x.gf|0,0,99),ga:cl(x.ga|0,0,99),pts:cl(x.pts|0,0,99)})):null,qualifiers:Array.isArray(t.qualifiers)?t.qualifiers.slice(0,8):[],cupOpps:Array.isArray(t.cupOpps)?t.cupOpps.slice(0,3):[],cupRound:cl(t.cupRound|0,0,2),br:okBr(t.br),wc:okBr(t.wc)}:null;
+const pth=p=>`ianga_profiles/${p}`,lastP=()=>`ianga_last/x`;
+const LKEY='fracc',LLAST='fraccLast';
+function lLoad(){try{const a=JSON.parse(localStorage.getItem(LKEY)||'[]');return Array.isArray(a)?a.filter(p=>p&&typeof p.pid==='string'&&typeof p.name==='string').slice(0,8):[]}catch(e){return[]}}
+function lSave(p){try{const a=lLoad().filter(x=>x.pid!==p.pid);a.push(p);localStorage.setItem(LKEY,JSON.stringify(a))}catch(e){}}
+function lDel(pid){try{localStorage.setItem(LKEY,JSON.stringify(lLoad().filter(x=>x.pid!==pid)))}catch(e){}}
+function setLast(pid){try{localStorage.setItem(LLAST,pid)}catch(e){}if(dbx)dbx.doc(lastP()).set({pid}).catch(()=>{})}
+async function saveProf(p){lSave(p);try{if(dbx)await dbx.doc(pth(p.pid)).set(p)}catch(e){}}
+async function delProf(pid){lDel(pid);try{if(dbx)await dbx.doc(pth(pid)).delete()}catch(e){}}
+async function kdf(salt,pw){try{if(globalThis.crypto?.subtle){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']),b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:100000,hash:'SHA-256'},k,256);return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}}catch(e){}return fallbackHash('ianga-kdf-fallback:'+salt+':'+pw)}
+function dbSave(){if(!acct)return;lSave(acct);if(dbx)dbx.doc(pth(acct.pid)).set(acct).catch(()=>{})}
+const NOROOM='As salas online precisam de um servidor próprio do Ianga Futball para conectar jogadores em aparelhos diferentes.';
+const NOPERM='Seu acesso a este jogo é só de visualização, e salas online exigem acesso de colaborador. Peça ao dono para liberar, ou jogue no mesmo aparelho.';
+let permW=false;const emitErr=e=>{if(e&&e.code==='not_permitted'&&!permW){permW=true;ovShow('<h2>Sala online</h2><p>'+NOPERM+'</p>',[['Jogar 2 jogadores (mesma tela)',()=>{leaveNet();start(2)}],['Jogar contra o bot',()=>{leaveNet();start(1)}]])}};
+function updAcct(){if(acct)setTimeout(()=>{if(window.Peer)startFriendPresence();else{const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=startFriendPresence;document.head.appendChild(sc)}},0);const b=document.getElementById('b5');if(b)b.textContent=acct?'👤 '+acct.name:'👤 Conta (entrar / criar)'}
+const SETKEY='iangaSettings';let settings={theme:'light',volume:35,musicVolume:35,sfxVolume:75,music:true,sfx:true,graphics:'normal'};
+try{settings={...settings,...JSON.parse(localStorage.getItem(SETKEY)||'{}')}}catch(e){}
+if(!Number.isFinite(+settings.musicVolume))settings.musicVolume=Number.isFinite(+settings.volume)?+settings.volume:100;
+if(!Number.isFinite(+settings.sfxVolume))settings.sfxVolume=75;
+if(settings.graphics==='basic')settings.graphics='low';
+if(!settings.backgroundChoice){settings.theme='light';settings.backgroundChoice=true}
+function isDarkTheme(){return settings.theme==='dark'||(settings.theme==='system'&&!!(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches))}
+function saveSettings(){try{localStorage.setItem(SETKEY,JSON.stringify(settings))}catch(e){};document.documentElement.dataset.theme=settings.theme;}
+saveSettings();if(window.matchMedia){const darkQuery=window.matchMedia('(prefers-color-scheme: dark)');const refreshSystemTheme=()=>{if(settings.theme==='system')saveSettings()};if(darkQuery.addEventListener)darkQuery.addEventListener('change',refreshSystemTheme);else if(darkQuery.addListener)darkQuery.addListener(refreshSystemTheme)}let audioCtx=null;
+function startMusic(){const music=document.getElementById('ianga-bg-music');if(!music||!settings.music||settings.musicVolume<=0){if(music)music.pause();return}music.loop=true;music.volume=Math.max(0,Math.min(1,.9*settings.musicVolume/100));const p=music.play();if(p&&p.catch)p.catch(()=>{});}
+function stopMusic(){const music=document.getElementById('ianga-bg-music');if(music)music.pause()}
+// Em celulares, interrompe a música ao sair/trocar de app e só retoma ao voltar.
+(function mobileMusicLifecycle(){const mobile=()=>/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||('ontouchstart' in window&&Math.min(screen.width,screen.height)<900);if(!mobile())return;let wasPlaying=false;const pauseForExit=()=>{const m=document.getElementById('ianga-bg-music');if(!m)return;wasPlaying=!m.paused; m.pause()};const resumeOnReturn=()=>{if(document.visibilityState!=='visible')return;const m=document.getElementById('ianga-bg-music');if(m&&wasPlaying&&settings.music&&settings.musicVolume>0){m.volume=Math.max(0,Math.min(1,.9*settings.musicVolume/100));m.play().catch(()=>{})}wasPlaying=false};document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')pauseForExit();else resumeOnReturn()});window.addEventListener('pagehide',pauseForExit);window.addEventListener('freeze',pauseForExit);window.addEventListener('pageshow',resumeOnReturn);})();
+function clickSound(){if(!settings.sfx||settings.sfxVolume<=0)return;try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;if(!audioCtx)audioCtx=new AC();if(audioCtx.state==='suspended')audioCtx.resume();const now=audioCtx.currentTime,o=audioCtx.createOscillator(),gain=audioCtx.createGain();o.type='sine';o.frequency.setValueAtTime(620,now);o.frequency.exponentialRampToValueAtTime(360,now+.055);gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.16*(settings.sfxVolume/100),now+.008);gain.gain.exponentialRampToValueAtTime(.0001,now+.075);o.connect(gain);gain.connect(audioCtx.destination);o.start(now);o.stop(now+.08)}catch(e){}}
+function settingsMenu(){const h='<h2>⚙️ Configurações</h2><p>Visual, áudio, contas e acessibilidade.</p><label>Fundo <select id="setTheme"><option value="system">Automático</option><option value="light">Claro</option><option value="dark">Escuro</option></select></label><label>Volume da música <span id="musicVolText">'+settings.musicVolume+'%</span><input id="setMusicVolume" type="range" min="0" max="100" step="1" value="'+settings.musicVolume+'"></label><label>Volume dos efeitos sonoros <span id="sfxVolText">'+settings.sfxVolume+'%</span><input id="setSfxVolume" type="range" min="0" max="100" step="1" value="'+settings.sfxVolume+'"></label><label><input id="setMusic" type="checkbox" '+(settings.music?'checked':'')+'> Música ligada</label><label><input id="setSfx" type="checkbox" '+(settings.sfx?'checked':'')+'> Efeitos sonoros ligados</label><label>Qualidade dos gráficos <select id="setGraphics"><option value="low">Baixa — menos efeitos</option><option value="normal">Normal</option><option value="high">Alta — mais partículas</option><option value="ultra">Muito alta — partículas mais intensas</option></select></label><p>'+(acct?'Conta conectada: <b>'+esc(acct.name)+'</b>':'Nenhuma conta conectada')+'</p>';
+ ovShow(h,[['Aplicar configurações',()=>{settings.theme=document.getElementById('setTheme').value;settings.musicVolume=+document.getElementById('setMusicVolume').value;settings.sfxVolume=+document.getElementById('setSfxVolume').value;settings.volume=settings.musicVolume;settings.music=document.getElementById('setMusic').checked;settings.sfx=document.getElementById('setSfx').checked;settings.graphics=document.getElementById('setGraphics').value;saveSettings();if(settings.music&&settings.musicVolume>0)startMusic();else stopMusic();settingsMenu()}],['👤 Gerenciar contas',acctMenu],['👥 Amigos',friendsMenu],['Denúncias e bloqueios',moderationMenu],['Voltar',()=>{tov.style.display='none'}]],true);
+ document.getElementById('setTheme').value=settings.theme;document.getElementById('setGraphics').value=settings.graphics;
+ for(const [id,txt] of [['setMusicVolume','musicVolText'],['setSfxVolume','sfxVolText']]){const el=document.getElementById(id),out=document.getElementById(txt);el.addEventListener('input',()=>{out.textContent=el.value+'%';if(id==='setMusicVolume'){const m=document.getElementById('ianga-bg-music');if(m&&settings.music)m.volume=.9*(+el.value/100)} });}
+}
+const BLOCKKEY='iangaBlocked',REPORTKEY='iangaReports';function readStore(k){try{const x=JSON.parse(localStorage.getItem(k)||'[]');return Array.isArray(x)?x:[]}catch(e){return[]}}function blocked(){return readStore(BLOCKKEY)}
+function blockUser(n){if(!n||n===acct?.name)return;let a=blocked();if(!a.some(x=>x.toLowerCase()===n.toLowerCase()))a.push(n);try{localStorage.setItem(BLOCKKEY,JSON.stringify(a))}catch(e){}moderationMenu()}
+function unblockUser(n){try{localStorage.setItem(BLOCKKEY,JSON.stringify(blocked().filter(x=>x.toLowerCase()!==n.toLowerCase())))}catch(e){}moderationMenu()}
+function reportUser(n,where='partida'){const a=readStore(REPORTKEY);a.push({nick:n,where,at:Date.now(),reporter:acct?.name||'Anônimo'});try{localStorage.setItem(REPORTKEY,JSON.stringify(a.slice(-100)))}catch(e){}ovShow('<h2>Denúncia registrada neste aparelho</h2><p>O registro local não é enviado a um moderador ou servidor.</p>',[['OK',moderationMenu]])}
+function moderationMenu(){const a=blocked();ovShow('<h2>Denúncias e bloqueios</h2><p>Os bloqueios e denúncias ficam salvos neste aparelho. Sem um servidor central, eles não podem ser aplicados globalmente.</p><input id="modNick" maxlength="16" placeholder="Nick do usuário"><p>Bloqueados: '+(a.length?a.map(esc).join(', '):'nenhum')+'</p>',[['Ver perfil / ações',()=>{const n=(document.getElementById('modNick').value||'').trim();if(!n){moderationMenu();return}ovShow('<h2>Perfil: '+esc(n)+'</h2><p>O jogo só conhece o nick deste usuário; não há perfil público central disponível.</p>',[['🚩 Denunciar',()=>reportUser(n,'perfil')],['⛔ Bloquear',()=>blockUser(n)],['Voltar',moderationMenu]],true)}],['Denunciar',()=>{const n=(document.getElementById('modNick').value||'').trim();if(n)reportUser(n,'menu');else moderationMenu()}],['Bloquear',()=>{const n=(document.getElementById('modNick').value||'').trim();if(n)blockUser(n);else moderationMenu()}],...a.map(n=>['Desbloquear '+n,()=>unblockUser(n)]),['Voltar',settingsMenu]],true)}
+function clickSfx(){clickSound()}
+let particles=[];cv.addEventListener('pointerdown',e=>{if(settings.graphics==='low')return;const q=pt(e),quality={normal:7,high:13,ultra:22}[settings.graphics]||7;for(let i=0;i<quality;i++)particles.push({x:q.x,y:q.y,vx:(Math.random()-.5)*(settings.graphics==='ultra'?3:2),vy:(Math.random()-.5)*(settings.graphics==='ultra'?3:2),life:1,r:(settings.graphics==='ultra'?2.8:settings.graphics==='high'?2.3:1.8)+Math.random()*2.2,color:['#fff176','#ffffff','#80deea','#ffcc80','#f48fb1'][Math.floor(Math.random()*5)]})},{passive:true});
+function drawParticles(){if(settings.graphics==='low'){particles=[];return}for(const p of particles){p.x+=p.vx;p.y+=p.vy;p.life-=settings.graphics==='ultra'?.018:.026;g.save();g.globalAlpha=Math.max(0,p.life*(settings.graphics==='ultra'?.95:.8));g.fillStyle=p.color;g.shadowColor=p.color;g.shadowBlur=settings.graphics==='ultra'?12:settings.graphics==='high'?6:2;g.beginPath();g.arc(p.x,p.y,p.r,0,Math.PI*2);g.fill();g.restore()}particles=particles.filter(p=>p.life>0)}
+
+function login(p){acct={...p,pid:p.pid,name:p.name,salt:p.salt||'',pin:p.pin||'',kv:p.kv|0,tour:okTour(p.tour),stats:Object.assign({g:0,w:0,dir:0,def:0,out:0},p.stats),created:p.created||0};if(!acct.publicId)acct.publicId='IF-'+String(acct.pid).replace(/[^a-z0-9-]/gi,'').slice(0,32).toUpperCase();lSave(acct);tour=null;setLast(p.pid);updAcct();syncFriendInbox()}
+function logout(){acct=null;tour=null;setLast('');try{localStorage.removeItem('fraccAuto')}catch(e){}updAcct()}
+function recordMatch(){if(!acct||mode!==1)return;const a=acct.stats;a.g++;if(S.p>=goal)a.w++;a.dir+=st.p.dir;a.def+=st.p.def;a.out+=st.p.out;dbSave()}
+async function acctInit(){profs=lLoad();let last='',auto='';try{last=localStorage.getItem(LLAST)||'';auto=localStorage.getItem('fraccAuto')||''}catch(e){}
+try{if(window.IANGA_DB){uid='global';dbx=IANGA_DB;const q=await dbx.collection('ianga_profiles').get();q.docs.map(d=>d.data()).filter(p=>p&&typeof p.pid==='string'&&typeof p.name==='string').forEach(p=>{const i=profs.findIndex(x=>x.pid===p.pid);if(i>=0)profs[i]=p;else profs.push(p)});{if(!last){const l=await dbx.doc(lastP()).get();last=l.exists?l.data().pid:''}}}}catch(e){}
+const p=profs.find(x=>x.pid===last);if(p&&(!p.pin||auto===p.pid))login(p);updAcct();}
+
+
+function acctMenu(){leaveNet();
+const bs=[['🔑 Logar em conta existente',loginExisting],...profs.map(p=>[(acct&&acct.pid===p.pid?'✔ ':'')+p.name+(p.pin?' 🔒':''),()=>pickProf(p)]),['➕ Criar conta',newAcct]];if(acct){bs.push(['Sair da conta',()=>{logout();acctMenu()}]);bs.push(['Apagar esta conta',delAcct])}
+const a=acct&&acct.stats;ovShow('<h2>Contas</h2>'+(a?`<p>${esc(acct.name)}: ${a.g} partidas · ${a.w} vitórias · ${a.dir} diretos · ${a.def} defesas</p>`:'<p>Entre em uma conta antiga ou crie uma nova.</p>')+(dbx?'<p style="font-size:14px">Também salva na nuvem (login do Claude).</p>':'<p style="font-size:14px">Contas salvas neste navegador.</p>'),bs)}
+async function verifyPin(p,v){
+  const salt=p.salt||'', stored=String(p.pin||'');
+  if(p.kv===3)return fallbackHash('ianga-kdf-fallback:'+salt+':'+v)===stored?stored:'__senha_incorreta__';
+  if(p.kv===2){
+    try{const modern=await kdf(salt,v);if(modern===stored)return modern}catch(e){}
+    // Compatibilidade com contas antigas que usavam SHA-256(salt + senha).
+    const legacy=await sha(salt+v);
+    return legacy===stored?legacy:'__senha_incorreta__';
+  }
+  const legacy=await sha(salt+v);
+  return legacy===stored?legacy:'__senha_incorreta__';
+}
+let loginAttemptInProgress=false;function loginExisting(){loginAttemptInProgress=false;ovShow('<h2>Logar em conta existente</h2><input id=lnn placeholder="Nick da conta" maxlength=16 autocomplete=username><input id=lnp type=password placeholder="Senha" maxlength=32 autocomplete=current-password><label style="font-size:16px"><input type=checkbox id=lrm checked> Lembrar neste aparelho</label>',[['Logar',async()=>{if(loginAttemptInProgress)return;loginAttemptInProgress=true;
+const name=(document.getElementById('lnn').value||'').trim().toLocaleLowerCase(),pw=document.getElementById('lnp').value,rm=document.getElementById('lrm').checked;
+if(!name||!pw){loginAttemptInProgress=false;ovShow('<p>Digite o nick e a senha.</p>',[['Voltar',loginExisting]]);return}
+if(Date.now()<pinLock){loginAttemptInProgress=false;ovShow('<p>Muitas tentativas. Aguarde 30 segundos.</p>',[['Voltar',loginExisting]]);return}
+await IANGA_FETCH(name,pw);const matches=profs.filter(p=>p.name.toLocaleLowerCase()===name);let valid=[];
+for(const p of matches){if(p.pin&&await verifyPin(p,pw)!=='__senha_incorreta__')valid.push(p);else if(!p.pin&&matches.length===1)valid.push(p)}
+if(!valid.length){loginAttemptInProgress=false;if(++pinFail>=3){pinLock=Date.now()+30000;pinFail=0}ovShow('<p>Nick ou senha incorretos. Contas antigas deste navegador aparecem na lista de contas.</p>',[['Tentar de novo',loginExisting],['Voltar',acctMenu]]);return}
+pinFail=0;valid.sort((a,b)=>(a.created||0)-(b.created||0));const keep=valid[0];
+// Apaga cópias com o mesmo nick e senha, preservando a conta mais antiga.
+for(const duplicate of valid.slice(1)){await delProf(duplicate.pid);profs=profs.filter(x=>x.pid!==duplicate.pid)}
+login(keep);try{rm?localStorage.setItem('fraccAuto',keep.pid):localStorage.removeItem('fraccAuto')}catch(e){}acctMenu()
+}],['Voltar',acctMenu]])}
+function pickProf(p){if(!p.pin){login(p);acctMenu();return}
+ovShow(`<h2>Senha de ${esc(p.name)}</h2><input id=pn type=password maxlength=32 placeholder=senha><label style="font-size:16px"><input type=checkbox id=rm checked> Lembrar neste aparelho</label>`,[['Entrar',async()=>{const v=document.getElementById('pn').value,rm=document.getElementById('rm').checked;
+if(Date.now()<pinLock){ovShow('<p>Muitas tentativas. Aguarde 30 segundos.</p>');return}
+if(await verifyPin(p,v)===p.pin){pinFail=0;const same=[];for(const q of profs){if(q.pid!==p.pid&&q.name.toLocaleLowerCase()===p.name.toLocaleLowerCase()&&q.pin&&await verifyPin(q,v)===q.pin)same.push(q)}for(const q of same){await delProf(q.pid);profs=profs.filter(x=>x.pid!==q.pid)}login(p);try{rm?localStorage.setItem('fraccAuto',p.pid):localStorage.removeItem('fraccAuto')}catch(e){}acctMenu()}else{if(++pinFail>=3){pinLock=Date.now()+30000;pinFail=0}ovShow('<p>Senha incorreta.</p>',[['Tentar de novo',()=>pickProf(p)]])}}]])}
+function newAcct(){if(profs.length>=8){ovShow('<p>Limite de 8 contas.</p>');return}
+ovShow(`<h2>Nova conta</h2><input id=nn placeholder=nome maxlength=16><input id=np type=password maxlength=32 placeholder=senha>`,[['Criar',async()=>{
+const name=document.getElementById('nn').value.replace(/[^\p{L}\p{N} _.-]/gu,'').trim().slice(0,16),pin=document.getElementById('np').value;
+if(!name){ovShow('<p>Digite um nome.</p>',[['Voltar',newAcct]]);return}
+if(pin.length<4){ovShow('<p>A senha precisa ter pelo menos 4 caracteres.</p>',[['Voltar',newAcct]]);return}
+if(profs.some(x=>x.name.trim().toLocaleLowerCase()===name.trim().toLocaleLowerCase())){ovShow('<p>Já existe uma conta com esse nome.</p>',[['Voltar',newAcct]]);return}
+const salt=[...crypto.getRandomValues(new Uint8Array(8))].map(b=>b.toString(16).padStart(2,'0')).join(''),pid='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+let hash,kv=2;try{hash=pin?await kdf(salt,pin):'';if(pin&&!globalThis.crypto?.subtle)kv=3}catch(e){hash=fallbackHash('ianga-kdf-fallback:'+salt+':'+pin);kv=3}const p={pid,name,salt,kv,pin:hash,tour:null,stats:{g:0,w:0,dir:0,def:0,out:0},created:Date.now()};
+try{await saveProf(p);profs.push(p);login(p);try{localStorage.setItem('fraccAuto',pid)}catch(e){}acctMenu()}catch(e){ovShow('<p>Não foi possível salvar a conta.</p>')}}]])}
+function delAcct(){const p=acct;if(!p)return;ovShow(`<p>Apagar a conta ${esc(p.name)} e todo o progresso dela?</p>`,[['Sim, apagar',async()=>{try{await delProf(p.pid);profs=profs.filter(x=>x.pid!==p.pid);logout()}catch(e){}acctMenu()}]])}
+let lastOv=['',[]];
+const okBr=b=>b&&Array.isArray(b.n)?b:null;
+function chart(kind,w){const t=tour,back=()=>ovShow(...lastOv),tg=[['Voltar',back],[kind==='tab'?'Ver torneio':'Ver tabela',()=>chart(kind==='tab'?'br':'tab','br')]];if(!t){ovShow('<h2>Ligas</h2><p>Comece uma carreira para ver a tabela.</p>',tg,true);return}
+ let h='';if(kind==='tab'){
+ const rows=sortedTable(t);h='<h2>Liga '+LG[t.lg]+' · '+DV[t.div]+'</h2><p>Temporada '+t.season+' · Rodada '+(t.round||0)+'/11 · 12 times</p><table cellpadding="4" style="font-size:15px;border-collapse:collapse;max-width:100%"><tr><th>#</th><th>Time</th><th>J</th><th>V</th><th>E</th><th>D</th><th>SG</th><th>Pts</th></tr>'+rows.map((x,i)=>`<tr style="${x.name===t.team?'font-weight:bold;background:#dcebd2;color:#222':(t.div===3&&i<8?'background:#dbeafe;color:#222':'')}"><td>${i+1}</td><td>${esc(x.name)}</td><td>${x.played}</td><td>${x.w}</td><td>${x.d}</td><td>${x.l}</td><td>${x.gf-x.ga}</td><td><b>${x.pts}</b></td></tr>`).join('')+'</table><p>Vitória = 3 pontos · Empate = 1 · Derrota = 0</p>'+(t.div===3?'<p>Os oito primeiros ficam na zona de classificação para o torneio.</p>':'<p>Os dois primeiros sobem; os últimos podem ser rebaixados conforme a divisão.</p>');
+ }else{
+ const stages=['Quartas de final','Semifinal','Final'];h='<h2>🏆 Torneio da Divisão 1</h2><p>Temporada '+t.season+'</p>';if(t.phase!=='cup'&&!t.qualifiers)h+='<p>O torneio só começa quando a temporada da Divisão 1 termina e os oito primeiros se classificam.</p>';else{h+='<p>Classificados:</p><ol>'+((t.qualifiers||[]).map(q=>'<li>'+esc(q.name)+'</li>').join(''))+'</ol><p>Fase atual: '+(stages[t.cupRound||0]||stages[0])+'</p><p>Seu adversário: <b>'+esc(t.opp?.name||t.cupOpps?.[t.cupRound||0]?.name||'A definir')+'</b></p><p>Cada fase é decidida em uma partida: quartas → semifinais → final.</p>'}}
+ ovShow(h,tg,true)}
+let pc=false;const KM={wasd:['a','d','w','s'],arr:['ArrowLeft','ArrowRight','ArrowUp','ArrowDown']},kn=e=>e.key.length===1?e.key.toLowerCase():e.key;
+const KB=s=>{const L2=mode===2&&!online;return s==='c'?['↑←↓→','Enter']:L2?['W A S D','Espaço']:['WASD / setas','Espaço']};
+function flip(cx,cy,f){g.save();g.translate(cx,cy);g.rotate(Math.PI);g.translate(-cx,-cy);f();g.restore()}
+function setDev(v){pc=v;try{localStorage.setItem('frdev',v?'pc':'mob')}catch(e){}}
+function devAsk(){let sug='';try{sug=localStorage.getItem('frdev')||''}catch(e){}const sp=sug?sug==='pc':!matchMedia('(pointer:coarse)').matches;
+ovShow('<h2>Como você vai jogar?</h2><p>No PC os controles são pelo teclado.</p>',[['📱 Celular'+(!sp?' (sugerido)':''),()=>setDev(false)],['💻 PC'+(sp?' (sugerido)':''),()=>setDev(true)]],true,true)}
+function upd(dt){
+if(state==='point'){timer-=dt;if(timer<=0){if(S.p>=goal||S.c>=goal){state='over';recordMatch();if(tour)tourEnd()}else{state='serve';ball=null;msg='';locked=false;window.__svShot=null;
+for(const s of['p','c']){ctl[s].ax=0;ctl[s].ay=s==='p'?-.6:.6}
+if(mode===1&&server==='c'){C.x=L+20+Math.random()*(R-L-40);C.y=T+30+Math.random()*(M-T-70);cpuWait=Math.random()<.3?5+Math.random()*3:2+Math.random()*2;cpuTry=0;coolT=0;pickAim()}}hint()}return}
+if(state==='over'||state==='menu')return;
+P.mv=C.mv=false;
+for(const s of['p','c']){const o=pl[s],cpu=mode===1&&s==='c';
+if(server===s&&(cpu||locked||state==='flight'))continue;
+if(cpu){cpuMove(o,dt);continue}
+const[vx,vy]=vec(s);if(Math.hypot(vx,vy)>.12){o.x+=vx*SP*dt;o.y+=vy*SP*dt;o.mv=true;clampS(o,s)}}
+if(state==='serve'&&locked&&!window.__svShot&&(mode===2||server==='p')){const c=ctl[server],v=vec(server);if(Math.hypot(v[0],v[1])>.12){if(server==='c'&&online==='host'?ctl.c.kb:pc){c.ax+=v[0]*SP*1.7*dt/430;c.ay+=v[1]*SP*1.7*dt/430;const m=Math.hypot(c.ax,c.ay);if(m>1){c.ax/=m;c.ay/=m}}else{const dx=(v[0]-c.ax)*430,dy=(v[1]-c.ay)*430,d=Math.hypot(dx,dy)||1,k=Math.min(d,SP*1.7*dt)/d;c.ax+=(v[0]-c.ax)*k;c.ay+=(v[1]-c.ay)*k}}}
+if(state==='serve'){const ap=aimPt(),rs=server==='p'?C:P,rd=server==='p'?'c':'p';if(ap){const dx=rs.x-ap.x,dy=rs.y-ap.y,d=Math.hypot(dx,dy);if(d<KO){rs.x=ap.x+(d>.01?dx/d*KO:KO);rs.y=ap.y+(d>.01?dy/d*KO:0);clampS(rs,rd)}}}
+if(mode===1&&state==='serve'&&server==='c'){cpuWait-=dt;coolT-=dt;
+if(coolT<=0&&cpuTry<8&&Math.hypot(cpuAim.x-P.x,cpuAim.y-P.y)<100){cpuTry++;coolT=.6;cpuWait+=.4;pickAim()}
+if(cpuWait<=0)kick(C,cpuAim.x,cpuAim.y,'c')}
+if(state==='flight'){
+ball.t+=dt/ball.dur;const t=Math.min(ball.t,1);
+ball.gx=ball.sx+(ball.tx-ball.sx)*t;ball.gy=ball.sy+(ball.ty-ball.sy)*t;ball.z=4*ball.pk*t*(1-t);
+const rc=ball.k==='p'?C:P,inHalf=ball.k==='p'?ball.gy<M:ball.gy>M;
+
+if(ball.t>=1){const inb=ball.tx>L&&ball.tx<R&&ball.ty>T&&ball.ty<B&&(ball.k==='p'?ball.ty<M:ball.ty>M);
+if(inb&&hit(rc,ball.tx,ball.ty-6))end(ball.k==='p'?'c':'p','DEFESA!');else if(inb)end(ball.k,'PONTO DIRETO!');else end(ball.k==='p'?'c':'p','FORA!')}}}
+function wl(x1,y1,x2,y2,w,col){g.strokeStyle=col;g.lineWidth=w;g.lineCap='round';g.beginPath();g.moveTo(x1,y1);
+for(let i=1;i<=10;i++){const t=i/10;g.lineTo(x1+(x2-x1)*t+Math.sin(i*7.3+x1*.1)*1.3,y1+(y2-y1)*t+Math.cos(i*5.1+y1*.1)*1.3)}g.stroke()}
+function man(x,y,col,run){const s=run?Math.sin(performance.now()/90)*5:0;g.strokeStyle=col;g.lineWidth=3;g.lineCap='round';
+g.fillStyle='#fffdf5';g.beginPath();g.arc(x,y-16,7,0,7);g.fill();g.stroke();g.beginPath();
+g.moveTo(x,y-9);g.lineTo(x,y+6);g.moveTo(x-9,y-4+s/2);g.lineTo(x,y-7);g.lineTo(x+9,y-4-s/2);
+g.moveTo(x,y+6);g.lineTo(x-6+s,y+17);g.moveTo(x,y+6);g.lineTo(x+6-s,y+17);g.stroke()}
+function fingers(hx,hy,n,col){g.strokeStyle=col;g.lineWidth=2.5;g.beginPath();
+for(let i=0;i<n;i++){const a=-Math.PI/2+(i-(n-1)/2)*.4;g.moveTo(hx,hy);g.lineTo(hx+11*Math.cos(a),hy+11*Math.sin(a))}g.stroke()}
+function txt(s,x,y,sz,col,al){g.font=sz+'px '+FONT;g.textAlign=al||'center';g.fillStyle=col;g.fillText(s,x,y)}
+function ui(s){const b=BASE[s],[vx,vy]=vec(s),col=COL[s];g.save();g.strokeStyle=col;g.lineWidth=3;g.globalAlpha=.9;
+g.fillStyle='#ffffff66';g.beginPath();g.arc(b.jx,b.jy,JR,0,7);g.fill();g.stroke();g.fillStyle=col;g.beginPath();g.arc(b.jx+vx*JR*.7,b.jy+vy*JR*.7,20,0,7);g.fill();
+const on=state==='serve'&&server===s&&!(mode===1&&s==='c');g.globalAlpha=on?1:.35;g.fillStyle=on?col:'#888';g.beginPath();g.arc(b.bx,b.by,BR,0,7);g.fill();
+g.translate(b.bx,b.by);if(s==='c')g.rotate(Math.PI);txt(locked?'CHUTAR':'SACAR',0,pc?0:6,17,'#fff');if(pc)txt(KB(s)[1],0,16,13,'#fff');g.restore();if(pc){g.save();g.translate(b.jx,b.jy);if(s==='c')g.rotate(Math.PI);txt(KB(s)[0],0,-JR-6,14,col);g.restore()}}
+function draw(){
+g.fillStyle=isDarkTheme()?'#222522':'#fbf7ea';g.fillRect(0,0,W,H);drawParticles();if(state==='menu')return;
+g.fillStyle=isDarkTheme()?'#334238':'#e3eed3';g.fillRect(L,T,R-L,M-T);g.fillStyle=isDarkTheme()?'#2b382f':'#d3e6c0';g.fillRect(L,M,R-L,B-M);
+wl(L,T,R,T,3,INK);wl(L,B,R,B,3,INK);wl(L,T,L,B,3,INK);wl(R,T,R,B,3,INK);wl(L,M,R,M,4,INK);
+txt(nm('p'),150,36,24,BLUE,'right');txt('×',200,36,24,INK);txt(nm('c'),250,36,24,RED,'left');
+txt(S.p,168,36,24,BLUE,'left');txt(S.c,232,36,24,RED,'right');
+scorer(60,S.p,BLUE,1);if(mode===2&&!online&&!pc)flip(340,330,()=>scorer(340,S.c,RED,-1));else scorer(340,S.c,RED,-1);
+
+
+
+if(mode===2&&!online&&!pc)flip(C.x,C.y-3,()=>man(C.x,C.y,RED,C.mv));else man(C.x,C.y,RED,C.mv);man(P.x,P.y,BLUE,P.mv);
+{const ap=aimPt();if(ap){g.fillStyle='#0000001a';g.beginPath();g.arc(ap.x,ap.y,KO,0,7);g.fill()}}
+if(mode===1&&state==='serve'&&server==='c'){g.strokeStyle=RED;g.lineWidth=2;g.beginPath();g.arc(C.x,C.y,22,0,7);g.stroke();g.setLineDash([6,6]);g.beginPath();g.moveTo(C.x,C.y);g.lineTo(cpuAim.x,cpuAim.y);g.stroke();g.beginPath();g.arc(cpuAim.x,cpuAim.y,Math.hypot(cpuAim.x-C.x,cpuAim.y-C.y)*.08,0,7);g.stroke();g.setLineDash([])}
+if(state==='serve'&&locked&&(mode===2||server==='p')){const o=pl[server],c=ctl[server],tx=o.x+c.ax*430,ty=o.y+c.ay*430,d=Math.hypot(c.ax,c.ay)*430;
+g.strokeStyle=COL[server];g.lineWidth=2;g.beginPath();g.arc(o.x,o.y,22,0,7);g.stroke();g.setLineDash([6,6]);g.beginPath();g.moveTo(o.x,o.y);g.lineTo(tx,ty);g.stroke();
+g.beginPath();g.arc(tx,ty,d*.08,0,7);g.stroke();g.setLineDash([])}
+if(ball){g.fillStyle='#0003';g.beginPath();g.ellipse(ball.gx,ball.gy,8,3.5,0,0,7);g.fill();
+const by=ball.gy-ball.z-6;g.fillStyle='#fff';g.strokeStyle=INK;g.lineWidth=2.5;g.beginPath();g.arc(ball.gx,by,8,0,7);g.fill();g.stroke();
+g.fillStyle=INK;g.beginPath();g.arc(ball.gx,by,3,0,7);g.fill()}
+for(const s of humans())ui(s);
+if(msg){const m=msg.split(' - ');g.font='bold 26px '+FONT;g.textAlign='center';g.lineWidth=7;g.strokeStyle='#fffdf5';g.fillStyle=INK;
+for(const r of mode===2?[0,1]:[0]){g.save();if(r){g.translate(200,M);g.rotate(Math.PI);g.translate(-200,-M)}
+m.forEach((s,i)=>{g.strokeText(s,200,M+70+i*32);g.fillText(s,200,M+70+i*32)});g.restore()}}}
+function pt(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
+function updJ(s,p){const b=BASE[s],dx=p.x-b.jx,dy=p.y-b.jy,m=Math.hypot(dx,dy)||1,k=m>JR?JR/m:1;ctl[s].vx=dx*k/JR;ctl[s].vy=dy*k/JR}
+function press(s){if(online==='guest'){net&&net.emit('inp',{b:1}).catch(()=>{});return}if(state!=='serve'||server!==s||(mode===1&&s==='c'))return;
+if(!locked){locked=true;window.__svShot=null;cpuRead=Math.random()<.5?.3:0;cpuNx=(Math.random()-.5)*70;hint()}else{if(window.__svShot)return;const o=pl[s],c=ctl[s],tx=o.x+c.ax*430,ty=o.y+c.ay*430;if(mode!==1||online){window.__svT=performance.now();window.__svShot={s,tx,ty};return}kick(o,tx,ty,s)}}
+cv.addEventListener('pointerdown',e=>{const p=pt(e);if(state==='over'){leaveNet();reset();return}if(state==='menu')return;
+for(const s of humans()){const b=BASE[s];
+if(Math.hypot(p.x-b.jx,p.y-b.jy)<JR+26){ctl[s].id=e.pointerId;updJ(s,p);try{cv.setPointerCapture(e.pointerId)}catch(_){}return}
+if(Math.hypot(p.x-b.bx,p.y-b.by)<BR+12){press(s);return}}});
+cv.addEventListener('pointermove',e=>{for(const s of humans())if(ctl[s].id===e.pointerId)updJ(s,pt(e))});
+const rel=e=>{for(const s of['p','c'])if(ctl[s].id===e.pointerId){ctl[s].id=null;ctl[s].vx=ctl[s].vy=0}};
+cv.addEventListener('pointerup',rel);cv.addEventListener('pointercancel',rel);
+addEventListener('keydown',e=>{if(!pc)return;if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'))return;const k=kn(e);if(k.startsWith('Arrow')||k===' ')e.preventDefault();if(e.repeat)return;keys[k]=1;if(k===' ')press('p');if(k==='Enter')press(mode===2&&!online?'c':'p')});addEventListener('keyup',e=>{keys[kn(e)]=0});
+function start(m,t){reset();mode=m;if(!t){tour=null;lvl=.5;goal=5;oppName=''}st.p={dir:0,def:0,out:0};st.c={dir:0,def:0,out:0};state='serve';server=Math.random()<.5?'p':'c';if(m===1&&server==='c'){C.x=L+20+Math.random()*(R-L-40);C.y=T+30+Math.random()*(M-T-70);cpuWait=3;cpuTry=0;coolT=0;pickAim()}hint()}
+document.getElementById('b1').onclick=()=>{leaveNet();start(1)};document.getElementById('b2').onclick=()=>{leaveNet();start(2)};document.getElementById('back').onclick=()=>{leaveNet();reset()};
+document.getElementById('b3').onclick=()=>{leaveNet();const saved=acct?acct.tour:null;if(saved&&saved.team){tour=saved;ovShow('<h2>⚽ Campanha</h2><p>Temporada '+saved.season+' · '+esc(saved.team)+' · '+DV[saved.div]+'</p>',[['Continuar campanha',nextMatch],['Ver tabela',()=>chart('tab','br')],['Nova campanha',newTour]])}else newTour()};
+const FRIEND_KEY='iangaFriends',FRIEND_LIMIT=20;
+const inboxSeen=new Set();let inboxBusy=false,inboxOwner='',cloudFriendPrompt=false;
+async function friendRpc(path,args){if(!acct)throw new Error('signed_out');return IANGA_SB('rpc/'+path,{method:'POST',body:JSON.stringify({_pid:acct.pid,_pin:acct.pin,...args})})}
+async function syncFriendInbox(){if(!acct||inboxBusy)return;inboxBusy=true;const owner=acct.pid;try{
+ if(inboxOwner!==owner){inboxOwner=owner;inboxSeen.clear()}
+ await friendRpc('if_register',{_id:acct.publicId});
+ const profile=await friendRpc('ip_fetch',{});if(acct?.pid!==owner)return;
+ if(profile){if(profile.publicId!==acct.publicId){await IANGA_DB.doc('ianga_profiles/'+acct.pid).set({...profile,publicId:acct.publicId})}const merged=friendsLoad();for(const f of profile.friends||[]){if(!merged.some(x=>x.nick.toLowerCase()===f.nick.toLowerCase()))merged.push(f)}friendsSave(merged)}
+ const messages=await friendRpc('if_inbox',{});if(acct?.pid!==owner)return;
+ for(const m of messages||[]){if(inboxSeen.has(m.id))continue;inboxSeen.add(m.id);const d=m.payload||{};if(m.kind==='room'){const c={open:true,send:x=>{if(x.data?.roomInviteAccepted||x.data?.roomInviteRejected)friendRpc('if_reply',{_message:m.id,_accept:!!x.data.roomInviteAccepted}).catch(()=>{})}};queueRoomInvite({...d,roomId:'OT:'+d.code},c)}else if(m.kind==='friend'){cloudFriendRequests.push(m)}}showCloudFriendRequest();
+ }catch(e){}finally{inboxBusy=false}}
+const cloudFriendRequests=[];
+function showCloudFriendRequest(){if(!acct||cloudFriendPrompt||activeRoomInvite||!cloudFriendRequests.length||state!=='menu'&&state!=='over')return;const m=cloudFriendRequests.shift();cloudFriendPrompt=true;const panel=document.createElement('dialog');panel.className='lobby-friends';panel.id='friendRequest';const title=document.createElement('h2');title.textContent='👥 Solicitação de amizade';const text=document.createElement('p');text.textContent=m.payload.nick+' quer adicionar você como amigo.';panel.append(title,text);
+ const reply=async accept=>{try{await friendRpc('if_reply',{_message:m.id,_accept:accept});panel.close();cloudFriendPrompt=false;inboxBusy=false;await syncFriendInbox();if(state==='menu'&&tov.textContent.includes('Amigos do Ianga'))friendsMenu()}catch(e){text.textContent='Não foi possível responder. Tente novamente.'}};
+ for(const [label,accept] of [['Aceitar amizade',true],['Recusar',false]]){const b=document.createElement('button');b.textContent=label;b.onclick=()=>reply(accept);panel.append(b)}panel.addEventListener('cancel',e=>{e.preventDefault();reply(false)});panel.addEventListener('close',()=>panel.remove());document.body.append(panel);panel.showModal()}
+setInterval(()=>{syncFriendInbox();showCloudFriendRequest()},2500);
+let friendPresencePeer=null,friendPresenceId='';
+const roomInviteQueue=[];let activeRoomInvite=null,roomInvitePanel=null;
+function inviteReply(c,data){try{if(c.open)c.send({type:'st',data})}catch(e){}}
+function queueRoomInvite(d,c){const rid=String(d.roomId||'');if(!rid)return;inviteReply(c,{roomInviteQueued:true});if(activeRoomInvite?.d.roomId===rid||roomInviteQueue.some(i=>i.d.roomId===rid))return;roomInviteQueue.push({d,c});showNextRoomInvite()}
+function showNextRoomInvite(){
+ const playing=state!=='menu'&&state!=='over';
+ if(playing){if(activeRoomInvite){roomInviteQueue.unshift(activeRoomInvite);activeRoomInvite=null;roomInvitePanel?.close();roomInvitePanel=null}return}
+ if(activeRoomInvite||!roomInviteQueue.length||window.__profileFriendPrompt||window.__invitePromptOpen||cloudFriendPrompt||!acct)return;
+ const item=roomInviteQueue.shift();activeRoomInvite=item;const panel=document.createElement('dialog');roomInvitePanel=panel;panel.className='lobby-friends';panel.id='roomInvitation';
+ const title=document.createElement('h2');title.textContent='🎮 Convite para sala';const text=document.createElement('p');text.textContent=String(item.d.nick||'Jogador').slice(0,16)+' convidou você para entrar na sala.';const modeText=document.createElement('p');modeText.textContent='Modo: '+({carreira:'Campanha (online)',torneio:'Torneio',x1:'X1',tournament:'Torneio'}[item.d.game]||'Online');panel.append(title,text,modeText);
+ const finish=async accept=>{panel.close();roomInvitePanel=null;activeRoomInvite=null;if(accept){leaveNet();reset();if(window.OT)OT.match=null;const rid=String(item.d.roomId);if(rid.startsWith('OT:'))await otJoin(rid.slice(3));else await roomJoin(rid,false)}inviteReply(item.c,accept?{roomInviteAccepted:true}:{roomInviteRejected:true});setTimeout(showNextRoomInvite,1600)};
+ const yes=document.createElement('button');yes.textContent='Aceitar e entrar';yes.onclick=()=>{yes.disabled=true;finish(true)};const no=document.createElement('button');no.textContent='Recusar';no.onclick=()=>finish(false);panel.append(yes,no);panel.addEventListener('cancel',e=>{e.preventDefault();finish(false)});panel.addEventListener('close',()=>panel.remove());document.body.append(panel);panel.showModal()
+}
+setInterval(()=>{showNextRoomInvite();if(acct&&window.Peer)startFriendPresence()},1000);
+function startFriendPresence(){
+ if(!acct||!window.Peer)return;
+ const id=String(acct.publicId||'');if(!id)return;if(friendPresencePeer&&friendPresenceId===id&&!friendPresencePeer.destroyed){if(friendPresencePeer.disconnected)try{friendPresencePeer.reconnect()}catch(e){}return;}
+ try{
+  if(friendPresencePeer){friendPresencePeer.destroy();friendPresencePeer=null}
+  friendPresenceId=id;friendPresencePeer=new Peer(id);
+  friendPresencePeer.on('connection',c=>{
+   c.on('data',m=>{
+    const d=m&&m.data&&m.data.hello;
+    if(!m||m.type!=='inp'||!d||(!d.friendRequest&&!d.roomInvite))return;if(d.roomInvite){queueRoomInvite(d,c);return}if(window.__profileFriendPrompt)return;
+    window.__profileFriendPrompt=true;
+    const nick=String(d.nick||'Jogador').slice(0,16),pid=String(d.profileId||'');
+    ovShow('<h2>👥 Solicitação de amizade</h2><p><b>'+esc(nick)+'</b> quer adicionar você como amigo.</p>',[
+     ['Aceitar amizade',()=>{window.__profileFriendPrompt=false;const a=friendsLoad();if(!a.some(x=>x.profileId===pid||(x.nick||'').toLowerCase()===nick.toLowerCase())){a.push({nick,peer:pid,profileId:pid});friendsSave(a)}try{c.send({type:'st',data:{friendAccepted:true,nick:acct.name,profileId:acct.publicId}})}catch(e){}setTimeout(()=>{try{c.close()}catch(e){}},300);ovShow('<p>Amizade aceita.</p>',[['OK',friendsMenu]],true)}],
+     ['Recusar',()=>{window.__profileFriendPrompt=false;try{c.send({type:'st',data:{friendRejected:true}})}catch(e){}setTimeout(()=>{try{c.close()}catch(e){}},200);ovShow('<p>Solicitação recusada.</p>',[['OK',friendsMenu]],true)}]
+    ],true);
+   });
+  });
+  friendPresencePeer.on('error',()=>{const old=friendPresencePeer;friendPresencePeer=null;friendPresenceId='';try{old?.destroy()}catch(e){}});
+ }catch(e){friendPresencePeer=null;friendPresenceId=''}
+}
+
+// Botão + da lista de amigos: envia convite direto ao ID de perfil do amigo.
+tov.addEventListener('click',async ev=>{const b=ev.target.closest('[data-room-invite]');if(!b)return;const f=friendsLoad()[Number(b.dataset.roomInvite)];if(!f||!window.OT?.code)return;b.disabled=true;try{await friendRpc('if_send',{_id:String(f.profileId||f.peer).toUpperCase(),_name:f.nick,_kind:'room',_payload:{code:OT.code,game:OT.data?.mode||'x1'}});b.title='Convite entregue'}catch(e){b.title='Não foi possível enviar o convite'}finally{b.disabled=false}});
+
+function friendsLoad(){try{const a=JSON.parse(localStorage.getItem(FRIEND_KEY)||'[]');return Array.isArray(a)?a.filter(x=>x&&x.nick&&x.peer).slice(0,FRIEND_LIMIT):[]}catch(e){return[]}}
+function friendsSave(a){localStorage.setItem(FRIEND_KEY,JSON.stringify(a.slice(0,FRIEND_LIMIT)))}
+async function friendsMenu(){
+ const fs=friendsLoad();
+ if(!acct){ovShow('<p>Entre na sua conta para usar os amigos.</p>',[['Voltar',()=>document.getElementById('b4').click()]],true);return}
+ if(!acct.publicId){acct.publicId='IF-'+Math.random().toString(36).slice(2,10).toUpperCase();dbSave()}
+ const myId=acct.publicId;await syncFriendInbox();
+ try{if(!window.Peer)await new Promise((resolve,reject)=>{const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=resolve;sc.onerror=reject;document.head.appendChild(sc)});startFriendPresence()}catch(e){}
+ let h='<h2>👥 Amigos do Ianga Futball</h2><p>Seu Nick:</p><h3 style="font-size:24px">'+esc(acct.name)+'</h3><p>Seu ID de perfil:</p><code>'+esc(myId)+'</code><p>Para adicionar um amigo, informe o Nick e o ID de perfil dele. O pedido fica salvo até o amigo abrir o jogo. O ID de perfil não é o ID da sala. </p><input id=fnick maxlength=16 placeholder="Nick do amigo"><input id=fpeer maxlength=80 placeholder="ID de perfil do amigo">';
+ if(fs.length)h+='<h3>Amigos ('+fs.length+'/'+FRIEND_LIMIT+')</h3><ul style="max-width:340px;text-align:left">'+fs.map((f,i)=>'<li style="margin:8px 0;padding:8px;border:1px solid var(--fg);border-radius:8px"><b>'+esc(f.nick)+'</b><br><small>ID de perfil: '+esc(f.profileId||f.peer)+'</small> '+(currentRoomId?'<button data-room-invite="'+i+'" title="Convidar para a sala">＋</button> ':'')+'<button data-fdel="'+i+'">Remover</button></li>').join('')+'</ul>';
+ ovShow(h,[['Enviar solicitação de amizade',async()=>{
+  const nick=(document.getElementById('fnick')?.value||'').trim(),peerId=(document.getElementById('fpeer')?.value||'').trim(),a=friendsLoad();
+  if(!nick||!peerId){ovShow('<p>Preencha o nick e o ID do amigo.</p>',[['Voltar',friendsMenu]],true);return}
+  if(peerId===myId||a.some(x=>(x.profileId||x.peer)===peerId||x.nick.toLowerCase()===nick.toLowerCase())){ovShow('<p>Esse ID já está na lista ou é seu próprio ID.</p>',[['Voltar',friendsMenu]],true);return}
+  if(a.length>=FRIEND_LIMIT){ovShow('<p>A lista atingiu o limite de '+FRIEND_LIMIT+' amigos.</p>',[['Voltar',friendsMenu]],true);return}
+  try{await syncFriendInbox();await friendRpc('if_send',{_id:peerId.toUpperCase(),_name:nick,_kind:'friend',_payload:{}});ovShow('<h2>Solicitação enviada</h2><p>O pedido foi entregue para '+esc(nick)+'.</p>',[['Voltar',friendsMenu]],true)}catch(e){ovShow('<p>Não foi possível enviar. Confira o nick e o ID de perfil do amigo.</p>',[['Voltar',friendsMenu]],true)}
+ }],['🚩 Denunciar usuário',moderationMenu],['Criar sala',()=>onlineTournamentMenu()],['Voltar',()=>{if(online&&state!=='menu')tov.style.display='none';else document.getElementById('b4').click()}]],true);
+ tov.querySelectorAll('[data-fdel]').forEach(b=>b.onclick=()=>{const a=friendsLoad();a.splice(+b.dataset.fdel,1);friendsSave(a);friendsMenu()});
+}
+function onlineTournamentMenu(){
+ if(!acct){ovShow('<h2>🏆 Campanha e torneio</h2><p>Entre na sua conta para salvar sua campanha.</p>',[['Entrar / criar conta',acctMenu],['Voltar',()=>{tov.style.display='none'}]]);return}
+ const saved=acct.tour;
+ ovShow('<h2>🏆 Torneios (online)</h2><p>Seu Nick: <b>'+esc(acct.name)+'</b></p><p>Digite o ID exato da sala/torneio que o organizador copiou da tela de criação. O ID só funciona enquanto o organizador mantiver a sala aberta.</p><p>Conta: <b>'+esc(acct.name)+'</b></p><input id=tid placeholder="ID do torneio" maxlength=80>',
+ [['Criar torneio',()=>roomJoin('it'+Math.random().toString(36).slice(2,9),true)],
+ ['Entrar com ID',()=>{const c=(document.getElementById('tid')?.value||'').trim();if(c)roomJoin(c,false);else ovShow('<p>Digite o ID da sala/torneio.</p>',[['Voltar',onlineTournamentMenu]],true)}],
+ ['Voltar',()=>{tov.style.display='none'}]])
+}
+document.getElementById('b4').onclick=()=>{leaveNet();if(!acct){ovShow('<h2>Sala online</h2><p>Entre ou crie uma conta do Ianga Futball. Não precisa de conta Claude.</p>',[['Entrar / criar conta',acctMenu]]);return}ovShow(`<h2>Sala online</h2><p>Conta do jogo: <b>${esc(acct.name)}</b></p><p>Crie uma sala ou entre pelo convite de um amigo.</p><input id=rc placeholder="ID da sala" maxlength=80>`,[['Criar sala',()=>roomJoin('if'+Math.random().toString(36).slice(2,9),true)],['Entrar com ID',()=>{const c=document.getElementById('rc').value.trim();if(c)roomJoin(c,false)}]])};
+document.getElementById('b6').onclick=()=>{leaveNet();onlineTournamentMenu()};document.getElementById('b7').onclick=()=>{leaveNet();friendsMenu()};document.getElementById('inviteInGame').onclick=friendsMenu;
+
+let chatLog=[];
+function cleanChat(v){return String(v||'').replace(/https?:\/\/\S+/gi,'[link]').replace(/\b(fuck|shit|bitch|puta|caralho|porra|merda|viado|retardado)\b/gi,'••••').slice(0,180)}
+function chatMenu(){if(!online||!net){ovShow('<h2>Chat da partida</h2><p>O chat funciona dentro de uma sala online conectada.</p>',[['Voltar',()=>{tov.style.display='none'}]],true);return}const h='<h2>💬 Chat da partida</h2><div style="width:min(90vw,420px);max-height:40vh;overflow:auto;text-align:left;border:1px solid var(--fg);padding:8px">'+chatLog.filter(m=>!blocked().some(n=>n.toLowerCase()===m.nick.toLowerCase())).map(m=>'<p><b>'+esc(m.nick)+':</b> '+esc(m.text)+' <button data-report="'+esc(m.nick)+'">🚩</button> <button data-block="'+esc(m.nick)+'">⛔</button></p>').join('')+'</div><input id="chatMsg" maxlength="180" placeholder="Mensagem (censura básica)">';ovShow(h,[['Enviar',()=>{const text=cleanChat(document.getElementById('chatMsg')?.value);if(!text.trim())return;const item={nick:acct?.name||'Jogador',text};chatLog.push(item);if(online==='guest')net.emit('inp',{chat:item}).catch(()=>{});else net.emit('st',{chat:chatLog.slice(-40)}).catch(()=>{});chatMenu()}],['Atualizar',chatMenu],['Voltar',()=>{tov.style.display='none'}]],true);tov.querySelectorAll('[data-report]').forEach(b=>b.onclick=()=>reportUser(b.dataset.report,'chat'));tov.querySelectorAll('[data-block]').forEach(b=>b.onclick=()=>blockUser(b.dataset.block))}
+let last=performance.now();
+function loop(n){const dt=Math.min(.05,(n-last)/1000);last=n;document.getElementById('inviteInGame').style.display=online&&state!=='menu'?'block':'none';document.getElementById('chatInGame').style.display='none';document.getElementById('settingsBtn').style.display=state==='menu'?'block':'none';if(online!=='guest')upd(dt);if(online==='host'&&net&&state!=='menu'&&(snapT-=dt)<=0){snapT=.05;net.emit('st',snap()).catch(()=>{})}draw();requestAnimationFrame(loop)}
+reset();requestAnimationFrame(loop);const oldAcctButton=document.getElementById('b5');if(oldAcctButton){oldAcctButton.onclick=acctMenu;oldAcctButton.textContent=acct?'👤 '+acct.name:'👤 Conta (entrar / criar)';}document.getElementById('settingsBtn').onclick=()=>{settingsMenu();if(settings.music&&settings.musicVolume>0)startMusic()};document.getElementById('chatInGame').onclick=chatMenu;acctInit();devAsk();
+</script><audio id="ianga-bg-music" preload="auto" loop playsinline>
+  <source src="/__l5e/assets-v1/e831d64b-8b35-4c66-85b2-6fc92c10d756/musica.mp3" type="audio/mpeg">
+</audio><script>
+// Pequena trava global para impedir cliques acidentais em vários botões seguidos.
+;
+(function(){
+ const music=document.getElementById('ianga-bg-music');
+ if(!music)return;
+ music.loop=true;
+ music.volume=Math.max(0,Math.min(1,.9*(settings.musicVolume||0)/100));
+ document.addEventListener('pointerdown',function(){
+   if(settings.music&&settings.musicVolume>0)startMusic();
+   clickSound();
+ },true);
+ document.addEventListener('keydown',function(){if(settings.music&&settings.musicVolume>0)startMusic()},true);
+ if(!settings.music||settings.musicVolume<=0)music.pause();
+})();
+</script><script>
+(function(){
+ document.addEventListener('pointerdown',function(e){
+   const count=3;
+   for(let i=0;i<count;i++){
+     const p=document.createElement('span');
+     const angle=Math.random()*Math.PI*2,dist=5+Math.random()*8;
+     p.className='click-spark';
+     p.style.left=(e.clientX-1+Math.random()*2)+'px';
+     p.style.top=(e.clientY-1+Math.random()*2)+'px';
+     p.style.setProperty('--dx',(Math.cos(angle)*dist)+'px');
+     p.style.setProperty('--dy',(Math.sin(angle)*dist)+'px');
+     document.body.appendChild(p);
+     p.addEventListener('animationend',()=>p.remove(),{once:true});
+   }
+ },{passive:true});
+})();
+</script><script>
+/* Trava GLOBAL de cliques: depois de qualquer botão, TODOS os botões ficam bloqueados por LOCK_MS. */
+(function(){
+ const LOCK_MS=1500;let until=0;
+ const sel='button,input[type="button"],input[type="submit"],[role="button"],a[href],summary,[data-click-lock],.btn,[onclick]';
+ const ctl=t=>t&&t.closest?t.closest(sel):null;
+ function block(e){e.preventDefault();e.stopImmediatePropagation();e.stopPropagation()}
+ ['pointerdown','pointerup','mousedown','mouseup','touchstart','touchend'].forEach(ev=>document.addEventListener(ev,function(e){if(Date.now()<until&&ctl(e.target))block(e)},{capture:true,passive:false}));
+ document.addEventListener('click',function(e){const b=ctl(e.target);if(!b)return;if(Date.now()<until){block(e);return}until=Date.now()+LOCK_MS},true);
+ document.addEventListener('submit',function(e){if(Date.now()<until){block(e);return}until=Date.now()+LOCK_MS},true);
+})();
+/* Saque contra jogador: CHUTAR inicia a barra e fixa a mira; a bola sai ao encher. */
+window.SV_DELAY=1100;
+(function(){function f(){try{if(state==='serve'&&window.__svShot&&(mode!==1||online)){const k=Math.min(1,(performance.now()-window.__svT)/window.SV_DELAY),b=BASE[server];
+ if(k>=1&&online!=='guest'){const shot=window.__svShot;window.__svShot=null;kick(pl[shot.s],shot.tx,shot.ty,shot.s)}
+ if(b&&k<1){g.save();g.globalAlpha=.85;g.strokeStyle='#9a9a9a';g.lineWidth=6;g.beginPath();g.arc(b.bx,b.by,BR+8,-Math.PI/2,-Math.PI/2+k*Math.PI*2);g.stroke();g.restore()}}}catch(e){}requestAnimationFrame(f)}requestAnimationFrame(f)})();
+/* ===== Torneio / Carreira / X1 online (servidor Lovable Cloud) ===== */
+(function(){
+const BOTS=['Trovões FC','Leões do Sul','Águias Negras','Tubarões','Falcões','Panteras','Cometas','Furacão'];
+const OT=window.OT={code:'',last:'',match:null,done:false,reported:false,iv:null,view:false,test:false};
+try{Object.assign(OT,JSON.parse(sessionStorage.getItem('iangaLobby')||'{}'))}catch(e){}
+const persist=()=>{sessionStorage.setItem('iangaLobby',JSON.stringify({code:OT.code,key:OT.key||''}));try{if(OT.code&&acct)localStorage.setItem('iangaLastRoom:'+acct.pid,JSON.stringify({code:OT.code,key:OT.key||''}))}catch(e){}};
+const lastRoom=()=>{try{return acct?JSON.parse(localStorage.getItem('iangaLastRoom:'+acct.pid)||'null'):null}catch(e){return null}};
+const sb=window.IANGA_SB;const me=()=>acct?acct.name:'';
+let PL=[];const isBot=n=>n==='Treino'||!PL.includes(n);
+const LEFT={s:new Set()};const gone=n=>LEFT.s.has(n);const auto=n=>isBot(n)||gone(n);
+const dn=n=>esc(n)+(!isBot(n)&&gone(n)?' (bot)':'');
+function leftSet(d){const s=new Set();for(const c of (d&&d.chat)||[]){if(!c)continue;if(c.s){let m=/^(.+) saiu da sala$/.exec(c.t||'');if(m){s.add(m[1]);continue}m=/^(.+) entrou na sala$/.exec(c.t||'');if(m)s.delete(m[1])}else if(c.n)s.delete(c.n)}return s}
+const chatText=c=>c.s?String(c.t||''):c.t==='__voltou__'?String(c.n||'')+' entrou na sala':'';
+function chatItems(d){return ((d&&d.chat)||[]).filter(c=>c&&(c.s||!blocked().some(n=>n.toLowerCase()===String(c.n||'').toLowerCase()))).slice(-30).map(c=>{const sys=chatText(c);return sys?'<p><i>'+esc(sys)+'</i></p>':'<p><b>'+esc(c.n||'')+':</b> '+esc(c.t||'')+'</p>'}).join('')}
+function toast(t){let box=document.getElementById('iangaToasts');if(!box){box=document.createElement('div');box.id='iangaToasts';box.className='ianga-toasts';document.body.append(box)}const e=document.createElement('div');e.className='ianga-toast';e.textContent=t;box.append(e);setTimeout(()=>e.remove(),3500)}
+function chatNotify(d){const chat=(d&&d.chat)||[];if(OT.seenCode!==OT.code||OT.seen==null||chat.length<OT.seen){OT.seenCode=OT.code;OT.seen=chat.length;return}for(const c of chat.slice(OT.seen)){const t=chatText(c||{});if(t&&/(saiu|entrou) na sala$/.test(t)&&!t.startsWith(me()+' ')&&state==='menu')toast(t)}OT.seen=chat.length}
+const sim=()=>{const l=Math.floor(Math.random()*5);return Math.random()<.5?[5,l]:[l,5]};
+const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const mk=(a,b)=>{const m={a,b,sa:0,sb:0,done:false};if(isBot(a)&&isBot(b)){const s=sim();m.sa=s[0];m.sb=s[1];m.done=true}return m};
+const pairs=l=>{const r=[];for(let i=0;i+1<l.length;i+=2)r.push(mk(l[i],l[i+1]));return r};
+function rr(t,r){const all=t.slice();for(let k=0;k<r%(t.length-1);k++)all.splice(1,0,all.pop());const o=[];for(let i=0;i<all.length/2;i++)o.push(mk(all[i],all[all.length-1-i]));return o}
+const winners=c=>c.map(m=>m.sa>m.sb?m.a:m.b);
+const sorted=d=>Object.entries(d.table).sort((x,y)=>y[1].pts-x[1].pts||(y[1].gf-y[1].ga)-(x[1].gf-x[1].ga)).map(x=>x[0]);
+const PH={test:'Partida-teste',league:'Liga',ko:'Mata-mata',final:'Final'};
+async function get(code){const a=await sb('ianga_tourneys?code=eq.'+encodeURIComponent(code)+'&select=data');return a&&a[0]?a[0].data:null}
+async function put(code,d){try{const f=await get(code);if(f&&f.chat)d.chat=f.chat}catch(e){}await sb('rpc/ot_advance',{method:'POST',body:JSON.stringify({_code:code,_key:OT.key||'',_data:d})})}
+function begin(d){PL=d.players.slice();d.state='play';d.round=0;
+ if(d.mode==='carreira'){d.phase='test';d.tests={};d.cur=d.players.map(n=>({a:n,b:'Treino',sa:0,sb:0,done:false}));return}competition(d)}
+function competition(d){PL=d.players.slice();const bots=BOTS.concat(['Raios FC','Muralhas FC','Estrelas FC','Cirurgiões FC']);d.round=0;
+ if(d.mode==='carreira'){const T=d.tests||{},dv=n=>cl((T[n]&&T[n].div)|0,0,3);let groups;
+  if(d.divMode==='individual'){const ds=[...new Set(d.players.map(dv))].sort((a,b)=>b-a);groups=ds.map(v=>({div:v,teams:d.players.filter(p=>dv(p)===v)}))}
+  else{const v=Math.round(d.players.reduce((a,p)=>a+dv(p),0)/Math.max(1,d.players.length));groups=[{div:v,teams:d.players.slice()}]}
+  const multi=groups.length>1;groups.forEach(gr=>{for(const b of bots){if(gr.teams.length>=12)break;gr.teams.push(multi?b+' · '+DV[gr.div]:b)}});
+  d.groups=groups;d.teams=groups.flatMap(gr=>gr.teams);d.rounds=11;d.phase='league';d.table={};d.teams.forEach(t=>d.table[t]={p:0,w:0,l:0,gf:0,ga:0,pts:0});d.cur=groups.flatMap(gr=>rr(gr.teams,0));return}
+ let teams=d.players.slice();if(d.mode!=='x1')for(const b of bots){if(teams.length>=8)break;teams.push(b)}d.teams=shuf(teams);
+ if(d.mode==='x1'){d.phase='final';d.cur=[mk(d.teams[0],d.teams[1])]}
+ else{d.phase='ko';d.cur=pairs(d.teams)}}
+function advance(d){
+ if(d.phase==='test'){competition(d);return}
+ if(d.phase==='league'){d.cur.forEach(m=>{const A=d.table[m.a],B=d.table[m.b];A.p++;B.p++;A.gf+=m.sa;A.ga+=m.sb;B.gf+=m.sb;B.ga+=m.sa;if(m.sa>m.sb){A.w++;B.l++;A.pts+=3}else{B.w++;A.l++;B.pts+=3}});d.round++;const RN2=d.rounds||(d.teams.length-1);
+  if(d.round<RN2){d.cur=d.groups?d.groups.flatMap(gr=>rr(gr.teams,d.round)):rr(d.teams,d.round)}else{const pool=d.groups?d.groups[0].teams:d.teams;const t=sorted(d).filter(x=>pool.includes(x)).slice(0,8);d.qualified=t;d.phase='ko';d.round=0;d.cur=pairs(t.map((_,i)=>i%2===0?t[i/2]:t[t.length-1-Math.floor(i/2)]))}return}
+ const w=winners(d.cur);if(w.length===1){d.state='done';d.champion=w[0];return}d.round++;d.cur=pairs(w);if(d.cur.length===1)d.phase='final'}
+async function tick(){if(!OT.code)return;let d;try{d=await get(OT.code)}catch(e){return}if(!d)return;
+ OT.data=d;PL=(d.players||[]).slice();LEFT.s=leftSet(d);chatNotify(d);
+ if(OT.key&&d.host===me()&&d.state==='play'){let ch=false;d.cur.forEach(m=>{if(!m.done&&auto(m.a)&&auto(m.b)){const r=sim();m.sa=r[0];m.sb=r[1];m.done=true;ch=true}});if(d.cur.every(m=>m.done)){advance(d);ch=true}if(ch){try{await put(OT.code,d)}catch(e){}}}
+ const j=JSON.stringify(d);if(state==='menu'&&!OT.match&&OT.view&&j!==OT.last){const f=document.activeElement,log=document.getElementById('otChatLog');if(f&&f.id==='otChatMsg'&&log){log.innerHTML=chatItems(d);log.scrollTop=log.scrollHeight}else{OT.last=j;render(d)}}}
+function rid(d,i){return 'ianga-'+OT.code+'-'+d.phase+d.round+'-'+i}
+function render(d){const nm=me();let h='<h2>'+({x1:'⚽ X1 online',torneio:'🏆 Torneio online',carreira:'📈 Campanha (online)'})[d.mode]+'</h2><p>Código: <b>'+esc(OT.code)+'</b></p>';const bs=[];const host=d.host===nm&&OT.key;
+ if(d.state==='lobby'){h+='<p>Jogadores '+d.players.length+'/'+(d.mode==='x1'?2:8)+'</p><p>'+d.players.map(dn).join('<br>')+'</p>';
+  if(d.mode==='carreira'){const dm=d.divMode==='individual'?'individual':'universal';if(host)h+='<label><input type="checkbox" id="dmU" '+(dm==='universal'?'checked':'')+'> Divisão universal</label><label><input type="checkbox" id="dmI" '+(dm==='individual'?'checked':'')+'> Divisão individual</label>';else h+='<p>Divisão '+dm+'</p>'}
+  if(host){bs.push(['＋',()=>{OT.view=true;render(d);inviteList(d)}]);bs.push(['📋 Copiar código',()=>{navigator.clipboard?.writeText(OT.code).catch(()=>{});render(d)}]);bs.push(['▶ Iniciar',startLobby])}
+  else h+='<p>Aguardando o anfitrião iniciar.</p>'}
+ else if(d.state==='done'){h+='<h3>🏆 Campeão: '+dn(d.champion)+'</h3>'}
+ else{h+='<p><b>'+PH[d.phase]+(d.phase==='league'?' · rodada '+(d.round+1)+' de '+(d.rounds||(d.teams.length-1)):'')+'</b></p>';
+  if(d.phase==='league'){const gs=d.groups||[{teams:d.teams}];h+=gs.map(gr=>'<p style="font-size:.9em">'+(d.groups&&gr.div!=null?'<b>'+DV[gr.div]+'</b><br>':'')+sorted(d).filter(t=>gr.teams.includes(t)).map((t,i)=>(i+1)+'. '+dn(t)+' — '+d.table[t].pts+' pts').join('<br>')+'</p>').join('')}
+  h+='<p>'+d.cur.map(m=>dn(m.a)+' '+(m.done?m.sa+' x '+m.sb:'x')+' '+dn(m.b)).join('<br>')+'</p>';
+  const i=d.cur.findIndex(m=>!m.done&&(m.a===nm||m.b===nm));
+  if(i>=0){const m=d.cur[i],imA=m.a===nm,op=imA?m.b:m.a,info={i,imA};
+   if(d.phase==='test')bs.push(['Jogar partida-teste',()=>playTest(info)]);
+   else if(auto(op))bs.push(['⚽ Jogar contra '+op,()=>playBot(op,info)]);
+   else bs.push(['▶ Iniciar',()=>{const launch=info.imA?hostMatch:guestMatch;launch(rid(d,info.i),info).catch(()=>{leaveNet();OT.match=null;ovShow('<h2>'+matchTitle(d)+'</h2><p>Não foi possível conectar. Tente novamente.</p>',[['Voltar à sala',()=>{reset();otShow()}]],true,true)})}])}
+  else if(d.cur.some(m=>m.a===nm||m.b===nm))h+='<p>Aguardando os outros jogos da rodada...</p>';else if(d.qualified&&!d.qualified.includes(nm))h+='<p>Fim da temporada: você não se classificou para o torneio. Acompanhe o torneio.</p>';else h+='<p>Você foi eliminado. Acompanhe o torneio.</p>'}
+ h+='<div id="otChatLog">'+chatItems(d)+'</div><div class="ot-chat-bar"><input id="otChatMsg" maxlength="180" placeholder="Mensagem"><button id="otChatSend" type="button">Enviar</button></div>';
+ const keep=document.getElementById('otChatMsg')?.value||'';
+ bs.push(['Sair da sala',()=>{const c=OT.code;OT.code='';OT.key='';OT.view=false;OT.seen=null;sessionStorage.setItem('iangaLobby',JSON.stringify({code:'',key:''}));currentRoomId='';tov.style.display='none';if(c&&acct)sb('rpc/ot_leave',{method:'POST',body:JSON.stringify({_code:c,_pid:acct.pid,_pin:acct.pin})}).catch(()=>{})}]);ovShow(h,bs,true,true);
+ const log=document.getElementById('otChatLog');if(log)log.scrollTop=log.scrollHeight;
+ const inp=document.getElementById('otChatMsg'),snd=document.getElementById('otChatSend');if(inp){inp.value=keep;const send=async()=>{const t=cleanChat(inp.value).trim();if(!t||t==='__voltou__'||!acct)return;inp.value='';try{await sb('rpc/ot_chat',{method:'POST',body:JSON.stringify({_code:OT.code,_pid:acct.pid,_pin:acct.pin,_text:t})})}catch(e){}tick()};snd.onclick=e=>{e.stopPropagation();send()};inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();send()}}}
+ const dmU=document.getElementById('dmU'),dmI=document.getElementById('dmI');if(dmU&&dmI){const setDm=async v=>{try{const f=await get(OT.code);if(f&&f.state==='lobby'){f.divMode=v;await put(OT.code,f);OT.last='';tick()}}catch(e){}};dmU.onchange=()=>{if(!dmU.checked){dmU.checked=true;return}dmI.checked=false;setDm('universal')};dmI.onchange=()=>{if(!dmI.checked){dmI.checked=true;return}dmU.checked=false;setDm('individual')}}
+ if(d.state==='lobby'&&host){const start=[...tov.querySelectorAll('button')].find(b=>b.textContent==='▶ Iniciar');if(start)start.disabled=d.players.length<2;const plus=[...tov.querySelectorAll('button')].find(b=>b.textContent==='＋');if(plus){plus.title='Convidar amigos';plus.setAttribute('aria-label','Convidar amigos')}}}
+async function continueLast(){const L=lastRoom();if(!L||!L.code)return;let d=null;try{d=await get(L.code)}catch(e){}if(!d){ovShow('<p>O torneio anterior não está mais disponível.</p>',[['Voltar',onlineTournamentMenu]],true);return}
+ if(!(d.players||[]).includes(acct.name)){await otJoin(L.code);return}
+ OT.code=L.code;OT.key=d.host===acct.name?(L.key||''):'';persist();currentRoomId='OT:'+L.code;try{await sb('rpc/ot_chat',{method:'POST',body:JSON.stringify({_code:L.code,_pid:acct.pid,_pin:acct.pin,_text:'__voltou__'})})}catch(e){}otShow()}
+window.otShow=function(){if(!OT.code)return;OT.view=true;OT.last='';if(!OT.iv)OT.iv=setInterval(tick,2500);tick()};
+window.otJoin=async function(code){if(!acct){acctMenu();return}code=String(code||'').trim().toUpperCase();try{await sb('rpc/ot_join',{method:'POST',body:JSON.stringify({_code:code,_name:acct.name})})}catch(e){ovShow('<p>'+(String(e.message).includes('full')?'Sala cheia.':'Código não encontrado.')+'</p>',[['Voltar',onlineTournamentMenu]],true);return}OT.code=code;OT.key='';persist();currentRoomId='OT:'+code;otShow()};
+async function create(mode,back){const code=Math.random().toString(36).slice(2,8).toUpperCase();const d={mode,host:acct.name,players:[acct.name],state:'lobby'};const key=[...crypto.getRandomValues(new Uint8Array(16))].map(b=>b.toString(16).padStart(2,'0')).join('');try{await sb('rpc/ot_create',{method:'POST',body:JSON.stringify({_code:code,_key:key,_data:d})});OT.key=key}catch(e){ovShow('<p>Não foi possível falar com o servidor. Verifique a internet.</p>',[['Voltar',back||onlineTournamentMenu]],true);return}OT.code=code;persist();currentRoomId='OT:'+code;otShow()}
+window.onlineTournamentMenu=function(){if(OT.code&&acct){otShow();return}if(!acct){ovShow('<h2>🏆 Online</h2><p>Entre na sua conta primeiro.</p>',[['Entrar / criar conta',acctMenu],['Voltar',()=>{tov.style.display='none'}]]);return}
+ const lr=lastRoom();ovShow('<h2>Escolher modo</h2><input id="otc" maxlength="8" placeholder="Código da sala">',[
+ ...(lr&&lr.code?[['↩ Continuar torneio anterior (online)',continueLast]]:[]),
+ ['📈 Campanha (online)',()=>chooseMode('carreira')],['🏆 Torneio',()=>chooseMode('torneio')],
+ ['Entrar com código',()=>{const c=document.getElementById('otc')?.value;if(c)otJoin(c)}],['Voltar',()=>{tov.style.display='none'}]])};
+window.onlineSalaMenu=function(){if(OT.code&&acct){otShow();return}if(!acct){ovShow('<h2>⚽ Sala online</h2><p>Entre na sua conta primeiro.</p>',[['Entrar / criar conta',acctMenu],['Voltar',()=>{tov.style.display='none'}]]);return}
+ ovShow('<h2>Escolher modo</h2><input id="otc" maxlength="8" placeholder="Código da sala">',[
+ ['⚽ X1',()=>chooseMode('x1',onlineSalaMenu)],
+ ['Entrar com código',()=>{const c=document.getElementById('otc')?.value;if(c)otJoin(c)}],['Voltar',()=>{tov.style.display='none'}]])};
+function chooseMode(mode,back){ovShow('<h2>'+({carreira:'Campanha (online)',torneio:'Torneio',x1:'X1'})[mode]+'</h2>',[['Criar sala',()=>create(mode,back)],['Voltar',back||onlineTournamentMenu]],true,true)}
+async function startLobby(){try{const d=await get(OT.code);if(!d||d.state!=='lobby'||d.players.length<2){if(d)render(d);return}begin(d);await put(OT.code,d);OT.last='';await tick()}catch(e){ovShow('<p>Não foi possível iniciar a sala. Tente novamente.</p>',[['Voltar à sala',otShow]],true,true)}}
+function inviteList(d){let panel=document.getElementById('lobbyFriends');if(panel)panel.remove();panel=document.createElement('dialog');panel.id='lobbyFriends';panel.className='lobby-friends';const fs=friendsLoad();panel.innerHTML='<h2>Amigos</h2>'+(fs.length?'':'<p>Nenhum amigo adicionado.</p>')+'<div id="inviteStatus" role="status"></div>';fs.forEach(f=>{const row=document.createElement('div');row.className='friend-row';const name=document.createElement('span');name.textContent=f.nick;const add=document.createElement('button');add.textContent='＋';add.title='Convidar '+f.nick;add.setAttribute('aria-label','Convidar '+f.nick);add.onclick=()=>sendLobbyInvite(f,d,add,panel);row.append(name,add);panel.append(row)});const close=document.createElement('button');close.textContent='Voltar à sala';close.onclick=()=>panel.close();panel.append(close);document.body.append(panel);panel.addEventListener('close',()=>panel.remove());panel.showModal()}
+async function sendLobbyInvite(f,d,button,panel){const status=panel.querySelector('#inviteStatus');button.disabled=true;try{await friendRpc('if_send',{_id:String(f.profileId||f.peer).toUpperCase(),_name:f.nick,_kind:'room',_payload:{code:OT.code,game:d.mode}});if(status)status.textContent='Convite entregue para '+f.nick+'. Aguardando resposta.'}catch(e){if(status)status.textContent='Não foi possível enviar. Confira o nick e o ID de perfil do amigo.'}finally{button.disabled=false}}
+function playTest(info){OT.view=false;leaveNet();OT.match=info;OT.test=true;OT.done=false;OT.reported=false;OT.keep=tour;tour={season:1,phase:'test',lg:0,div:0,round:0,trophies:0};ovShow('<h2>Campanha (online)</h2>',[['Jogar partida-teste',nextMatch]],true,true)}
+window.otFinishTest=async function(){if(OT.reported)return;OT.reported=true;const sa=S.p,sb2=S.c,s=st.p,n=Math.max(1,sa),prof=s.dir/n>=.5?'Atacante':s.def/n>=.4?'Defensor':s.out<=1?'Preciso':'Equilibrado';tour.prof=prof;tour.div=sa>=3?(sa-sb2>=2?2:1):0;tour.lg=Math.floor(Math.random()*4);tour.team=({Atacante:'Raios',Defensor:'Muralhas',Preciso:'Cirurgiões',Equilibrado:'Estrelas'})[prof]+' '+LG[tour.lg];tour.phase='div';tour.table=makeTable(tour);tour.playedOpps=[];saveT();const result={sa,sb:sb2,prof,team:tour.team,div:tour.div,lg:tour.lg};try{await sb('rpc/ot_career_test',{method:'POST',body:JSON.stringify({_code:OT.code,_pid:acct.pid,_pin:acct.pin,_result:result})});OT.done=true;ovShow('<h2>Partida-teste concluída</h2><p>'+esc(result.team)+' · '+DV[result.div]+'</p>',[['Voltar à sala',()=>{OT.test=false;OT.match=null;leaveNet();reset();otShow()}]],true,true)}catch(e){OT.reported=false;ovShow('<p>Não foi possível salvar o teste.</p>',[['Tentar novamente',window.otFinishTest]],true,true)}};
+document.getElementById('b4').onclick=()=>{leaveNet();onlineSalaMenu()};
+
+async function report(sa,sb2){const m=OT.match;if(!m)return;const a=m.imA?sa:sb2,b=m.imA?sb2:sa;try{await sb('rpc/ot_report',{method:'POST',body:JSON.stringify({_code:OT.code,_idx:m.i,_sa:a,_sb:b})})}catch(e){}}
+function playBot(op,info){OT.view=false;leaveNet();const keep=tour;start(1);tour=null;oppName=op;lvl=.55;goal=5;OT.keep=keep;OT.match=info;OT.done=false;OT.reported=false;OT.bot=true;tov.style.display='none'}
+async function loadPeer(){if(!window.Peer)await new Promise((r,j)=>{const s=document.createElement('script');s.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';s.onload=r;s.onerror=j;document.head.appendChild(s)})}
+function matchTitle(d){return d.mode==='torneio'||d.phase==='ko'? 'Etapa':d.mode==='carreira'?'Rodada':'X1 online'}
+const SBURL='https://fbzhklglohqnclsqiggy.supabase.co',SBKEY='sb_publishable_nlvnUamNtY3oCv2tFe8EEQ_yJS-9NuF';let RTC=null;
+async function loadRT(){if(!window.supabase||!window.supabase.createClient)await new Promise((r,j)=>{const x=document.createElement('script');x.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';x.onload=r;x.onerror=j;document.head.appendChild(x)});if(!RTC)RTC=window.supabase.createClient(SBURL,SBKEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});return RTC}
+function rtNet(id){const ch=RTC.channel(id,{config:{broadcast:{self:false}}});const emit=(t,d)=>{try{ch.send({type:'broadcast',event:t,payload:d})}catch(e){}return Promise.resolve()};return{ch,net:{emit,on:()=>{},leave:()=>{try{RTC.removeChannel(ch)}catch(e){}}}}}
+const failMatch=()=>{leaveNet();OT.match=null;reset();ovShow('<p>Não foi possível conectar. Tente novamente.</p>',[['Voltar à sala',otShow]],true,true)};
+async function hostMatch(id,info){OT.view=false;await loadRT();leaveNet();const {ch,net:n}=rtNet(id);net=n;let started=false;
+ ch.on('broadcast',{event:'inp'},({payload})=>{if(net!==n)return;const d=payload||{};if(d.hello){if(!started){started=true;start(2);online='host';goal=5;OT.match=info;OT.done=false;OT.reported=false;OT.bot=false;tov.style.display='none'}return}if(!started)return;if(d.x!==undefined){ctl.c.vx=cl(+d.x||0,-1,1);ctl.c.vy=cl(+d.y||0,-1,1);ctl.c.kb=!!d.k}if(d.b)press('c')});
+ ch.subscribe(st=>{if(net===n&&!started&&(st==='CHANNEL_ERROR'||st==='TIMED_OUT'))failMatch()});
+ ovShow('<h2>'+matchTitle(OT.data)+'</h2><p>Aguardando o outro jogador clicar em Iniciar...</p>',[['Cancelar',()=>{leaveNet();OT.match=null;reset();otShow()}]],true,true)}
+async function guestMatch(id,info){OT.view=false;await loadRT();leaveNet();const {ch,net:n}=rtNet(id);net=n;
+ online='guest';got=false;OT.match=info;OT.done=false;OT.reported=true;OT.bot=false;
+ ovShow('<h2>'+matchTitle(OT.data)+'</h2><p>Aguardando o outro jogador clicar em Iniciar...</p>',[['Cancelar',()=>{leaveNet();OT.match=null;reset();otShow()}]],true,true);
+ ch.on('broadcast',{event:'st'},({payload})=>{if(net===n&&payload)applySnap(payload)});
+ ch.subscribe(st=>{if(net!==n)return;if(st==='SUBSCRIBED'){n.emit('inp',{hello:1});const iv=setInterval(()=>{if(net!==n||got){clearInterval(iv);return}n.emit('inp',{hello:1})},800)}else if(!got&&(st==='CHANNEL_ERROR'||st==='TIMED_OUT'))failMatch()})}
+(function watch(){try{if(OT.match&&!OT.test&&!OT.done&&state==='over'){OT.done=true;const sa=S.p,sbb=S.c;if(!OT.reported){OT.reported=true;report(sa,sbb)}if(OT.bot){tour=OT.keep}
+  setTimeout(()=>{ovShow('<h2>'+(sa>sbb?'Vitória':'Derrota')+' '+sa+' x '+sbb+'</h2><p>Resultado enviado ao torneio.</p>',[['Voltar ao torneio',()=>{leaveNet();reset();OT.match=null;otShow()}]])},600)}}catch(e){}requestAnimationFrame(watch)})();
+if(OT.code){otShow()}
+})();
+</script>
+</body>
