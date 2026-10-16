@@ -206,7 +206,7 @@ async function roomJoin(code,host){
   }
  }catch(e){bail((e&&e.message)||'Não foi possível conectar. Confira a internet e tente novamente.')}
 }
-setInterval(()=>{if(online==='guest'&&net&&got){const v=vec('p');net.emit('inp',{x:-v[0],y:-v[1],k:pc?1:0}).catch(()=>{})}},60);
+let __lastInp='',__lastInpT=0;setInterval(()=>{if(online==='guest'&&net&&got){const v=vec('p'),x=Math.round(-v[0]*100)/100,y=Math.round(-v[1]*100)/100,key=x+','+y,now=Date.now();if(key!==__lastInp||now-__lastInpT>200){__lastInp=key;__lastInpT=now;net.emit('inp',{x,y,k:pc?1:0}).catch(()=>{})}}},50);
 let dbx=null,uid=null,acct=null,profs=[],pinFail=0,pinLock=0;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const fallbackHash=s=>{let h1=0x811c9dc5,h2=0x9e3779b9;for(let i=0;i<s.length;i++){h1=Math.imul(h1^s.charCodeAt(i),0x01000193);h2=Math.imul(h2+s.charCodeAt(i),0x85ebca6b);h2^=h2>>>13}return (h1>>>0).toString(16).padStart(8,'0')+(h2>>>0).toString(16).padStart(8,'0')};
@@ -628,7 +628,7 @@ function playBot(op,info){OT.view=false;leaveNet();const keep=tour;start(1);tour
 async function loadPeer(){if(!window.Peer)await new Promise((r,j)=>{const s=document.createElement('script');s.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';s.onload=r;s.onerror=j;document.head.appendChild(s)})}
 function matchTitle(d){return d.mode==='torneio'||d.phase==='ko'? 'Etapa':d.mode==='carreira'?'Rodada':'X1 online'}
 const SBURL='https://fbzhklglohqnclsqiggy.supabase.co',SBKEY='sb_publishable_nlvnUamNtY3oCv2tFe8EEQ_yJS-9NuF';let RTC=null;
-async function loadRT(){if(!window.supabase||!window.supabase.createClient)await new Promise((r,j)=>{const x=document.createElement('script');x.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';x.onload=r;x.onerror=j;document.head.appendChild(x)});if(!RTC)RTC=window.supabase.createClient(SBURL,SBKEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});return RTC}
+async function loadRT(){if(!window.supabase||!window.supabase.createClient)await new Promise((r,j)=>{const x=document.createElement('script');x.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';x.onload=r;x.onerror=j;document.head.appendChild(x)});if(!RTC)RTC=window.supabase.createClient(SBURL,SBKEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},realtime:{params:{eventsPerSecond:60}}});return RTC}
 function rtNet(id){const ch=RTC.channel(id,{config:{broadcast:{self:false}}});const emit=(t,d)=>{try{ch.send({type:'broadcast',event:t,payload:d})}catch(e){}return Promise.resolve()};return{ch,net:{emit,on:()=>{},leave:()=>{try{RTC.removeChannel(ch)}catch(e){}}}}}
 const failMatch=()=>{leaveNet();OT.match=null;reset();ovShow('<p>Não foi possível conectar. Tente novamente.</p>',[['Voltar à sala',otShow]],true,true)};
 async function hostMatch(id,info){OT.view=false;await loadRT();leaveNet();const {ch,net:n}=rtNet(id);net=n;let started=false;
