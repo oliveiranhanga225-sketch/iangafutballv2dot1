@@ -17,3 +17,4 @@
 - Human competition matches enter their live PeerJS connection only after each participant confirms Iniciar; preserve the host/guest rendezvous so either click order waits for the other player.
 - Human launch windup captures the target on CHUTAR and synchronizes its progress in gameplay snapshots; bot serve timing stays independent.
 - Online guests predict their own movement locally and send their position; the host applies it and keeps simulating from a worker timer when its tab is in the background, so the guest never freezes waiting on the host's screen.
+- All live online transports apply guest input through `applyRemoteInput`, clear remote positions on reset/disconnect, and extrapolate recent positions between packets; this keeps movement consistent across modes and match transitions.

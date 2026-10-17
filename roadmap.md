@@ -1,4 +1,5 @@
 # Correções solicitadas
+- [x] Unificar movimento em X1, torneio e carreira online; X1 e torneio verificados com duas contas reais, incluindo anfitrião com animação pausada; carreira coberta pela simulação compartilhada, sem partida completa nesta verificação.
 - [x] Mover o atraso do saque para o lançamento, mantendo a duração e os bots.
 - [x] Ajustar orientação do contador vermelho no X1 local conforme PC/celular.
 - [x] Exigir Iniciar dos dois jogadores nas partidas compartilhadas e mostrar Rodada/Etapa sem parênteses; início verificado com duas contas.

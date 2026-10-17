@@ -64,7 +64,7 @@ const ctl={p:{id:null,vx:0,vy:0,ax:0,ay:-.6},c:{id:null,vx:0,vy:0,ax:0,ay:.6}},k
 let S,server,state,msg,timer,ball,mode=1,locked=false,cpuWait=0,cpuTgt,cpuDelay=0,wp=null,wpT=0,cpuAim={x:200,y:480},cpuTry=0,cpuRead=0,cpuNx=0,sil=null,silT=0,coolT=0;
 const cl=(v,a,b)=>Math.max(a,Math.min(b,v)),humans=()=>online?['p']:mode===2?['p','c']:['p'];
 const nm=s=>mode===2?(s==='p'?'Azul':'Vermelho'):(s==='p'?'Você':oppName||'Claude');
-function reset(){S={p:0,c:0};server='p';state='menu';ball=null;msg='';locked=false;window.__svShot=null;P.x=200;P.y=480;C.x=200;C.y=160;
+function reset(){S={p:0,c:0};server='p';state='menu';ball=null;msg='';locked=false;window.__svShot=null;window.__rp=null;P.x=200;P.y=480;C.x=200;C.y=160;
 for(const s of['p','c']){const c=ctl[s];c.id=null;c.vx=c.vy=0;c.ax=0;c.ay=s==='p'?-.6:.6}hint()}
 function hint(){const h=document.getElementById('hint');
 document.getElementById('menu').style.display=state==='menu'?'flex':'none';document.getElementById('back').style.display=state==='menu'?'none':'block';
@@ -145,7 +145,8 @@ function tourEnd(){if(window.OT?.test){window.otFinishTest();return}const t=tour
  const names=['Quartas de final','Semifinal','Final'];if(!win){h+='<p>Eliminado em '+names[t.cupRound]+'.</p>';saveT();offseason('Você foi eliminado nas '+names[t.cupRound]+'.',sortedTable(t).findIndex(x=>x.name===t.team)+1,false);return}else if(t.cupRound<2){h+='<p>Você avançou! Próxima fase: '+names[t.cupRound+1]+'.</p>';t.cupRound++;b='Jogar '+names[t.cupRound]}else{t.trophies=(t.trophies||0)+1;h+='<h3>🏆 CAMPEÃO DO TORNEIO DA DIVISÃO 1!</h3>';saveT();offseason('Você foi campeão do torneio da Divisão 1!',1,false);return}
  }
  h+='<p>Temporada '+t.season+' · '+t.team+' · '+DV[t.div]+' · Troféus: '+(t.trophies||0)+'</p>';saveT();ovShow(h,[[b,nextMatch],['📊 Tabela / torneio',()=>chart(t.phase==='cup'?'br':'tab','br')]])}
-function leaveNet(){if(net){try{net.leave()}catch(e){}}net=null;online=null;got=false}
+function leaveNet(){if(net){try{net.leave()}catch(e){}}net=null;online=null;got=false;window.__rp=null;ctl.c.vx=ctl.c.vy=0}
+function applyRemoteInput(d){if(!d||online!=='host')return;if(d.x!==undefined){ctl.c.vx=cl(+d.x||0,-1,1);ctl.c.vy=cl(+d.y||0,-1,1);ctl.c.kb=!!d.k}if(typeof d.px==='number'&&typeof d.py==='number'&&Number.isFinite(d.px)&&Number.isFinite(d.py))window.__rp={x:d.px,y:d.py,mv:!!d.mv,t:performance.now()};else if(d.x!==undefined)window.__rp=null;if(d.b)press('c')}
 function snap(){const r=v=>Math.round(v*100)/100;return{s:state,v:server,l:locked?1:0,S:[S.p,S.c],P:[P.x|0,P.y|0,P.mv?1:0],C:[C.x|0,C.y|0,C.mv?1:0],m:msg,b:ball?[ball.gx|0,ball.gy|0,ball.z|0]:0,q:window.__svShot?[performance.now()-window.__svT,window.__svShot.tx,window.__svShot.ty]:null,a:[r(ctl.p.ax),r(ctl.p.ay),r(ctl.c.ax),r(ctl.c.ay)]}}
 function applySnap(d){if(!d||!d.S||!d.P||!d.C||!d.a)return;if(!got){got=true;mode=2;tov.style.display='none'}window.__svShot=d.q?{s:d.v==='p'?'c':'p',tx:W-d.q[1],ty:H-d.q[2]}:null;if(d.q)window.__svT=performance.now()-d.q[0];
 const sv2=d.v==='p'?'c':'p',ch=state!==d.s||server!==sv2||locked!==!!d.l,ownX=P.x,ownY=P.y,ownMv=P.mv,keepOwn=online==='guest'&&!ch&&(d.s==='serve'||d.s==='flight')&&!(sv2==='p'&&(!!d.l||d.s==='flight'))&&Math.hypot(W-d.C[0]-P.x,H-d.C[1]-P.y)<80;state=d.s;server=sv2;locked=!!d.l;S.p=d.S[1];S.c=d.S[0];P.x=W-d.C[0];P.y=H-d.C[1];P.mv=!!d.C[2];if(keepOwn){P.x=ownX;P.y=ownY;P.mv=ownMv}C.x=W-d.P[0];C.y=H-d.P[1];C.mv=!!d.P[2];msg=(d.m||'').replace(/azul|vermelho|AZUL|VERMELHO/g,t=>({azul:'vermelho',vermelho:'azul',AZUL:'VERMELHO',VERMELHO:'AZUL'})[t]);ball=d.b?{gx:W-d.b[0],gy:H-d.b[1],z:d.b[2]}:null;ctl.p.ax=-d.a[2];ctl.p.ay=-d.a[3];ctl.c.ax=-d.a[0];ctl.c.ay=-d.a[1];if(ch)hint()}
@@ -193,7 +194,7 @@ async function roomJoin(code,host){
  [['Aceitar · X1',()=>{window.__invitePromptOpen=false;tov.style.display='none';if(net)net.emit('st',{inviteAccepted:true,game:'x1'}).catch(()=>{});start(2)}],
   ['Aceitar · Torneio',()=>{window.__invitePromptOpen=false;tov.style.display='none';if(net)net.emit('st',{inviteAccepted:true,game:'tournament'}).catch(()=>{});onlineTournamentMenu()}],
   ['Recusar',()=>{window.__invitePromptOpen=false;if(conn){try{conn.send({type:'st',data:{inviteRejected:true}});conn.close()}catch(e){}}leaveNet();currentRoomId='';document.getElementById('b4').click()}]],true);
-}if(d.x!==undefined){ctl.c.vx=cl(+d.x||0,-1,1);ctl.c.vy=cl(+d.y||0,-1,1);ctl.c.kb=!!d.k}if(d.b)press('c')});
+}applyRemoteInput(d)});
    net.on('st',m=>{if(online==='guest'){
  if(m.data&&m.data.inviteRejected){ovShow('<h2>Convite recusado</h2><p>O dono da sala recusou o convite.</p>',[['Voltar',()=>{leaveNet();document.getElementById('b4').click()}]]);return}
  if(m.data&&m.data.inviteAccepted){tov.style.display='none';if(m.data.game==='tournament'){ovShow('<h2>Torneio online</h2><p>O dono aceitou o convite para torneio. O modo de torneio online completo depende de um servidor compartilhado.</p>',[['Voltar',()=>{leaveNet();document.getElementById('b4').click()}]]);return}return}
@@ -327,7 +328,7 @@ P.mv=C.mv=false;
 for(const s of['p','c']){const o=pl[s],cpu=mode===1&&s==='c';
 if(server===s&&(cpu||locked||state==='flight'))continue;
 if(cpu){cpuMove(o,dt);continue}
-const rp=window.__rp;if(s==='c'&&online==='host'&&rp&&performance.now()-rp.t<600){o.x=rp.x;o.y=rp.y;o.mv=rp.mv;clampS(o,s);continue}
+const rp=window.__rp;if(s==='c'&&online==='host'&&rp&&performance.now()-rp.t<600){const age=Math.min(.2,Math.max(0,(performance.now()-rp.t)/1000));o.x=rp.x+ctl.c.vx*SP*age;o.y=rp.y+ctl.c.vy*SP*age;o.mv=rp.mv||Math.hypot(ctl.c.vx,ctl.c.vy)>.12;clampS(o,s);continue}
 const[vx,vy]=vec(s);if(Math.hypot(vx,vy)>.12){o.x+=vx*SP*dt;o.y+=vy*SP*dt;o.mv=true;clampS(o,s)}}
 if(state==='serve'&&locked&&!window.__svShot&&(mode===2||server==='p')){const c=ctl[server],v=vec(server);if(Math.hypot(v[0],v[1])>.12){if(server==='c'&&online==='host'?ctl.c.kb:pc){c.ax+=v[0]*SP*1.7*dt/430;c.ay+=v[1]*SP*1.7*dt/430;const m=Math.hypot(c.ax,c.ay);if(m>1){c.ax/=m;c.ay/=m}}else{const dx=(v[0]-c.ax)*430,dy=(v[1]-c.ay)*430,d=Math.hypot(dx,dy)||1,k=Math.min(d,SP*1.7*dt)/d;c.ax+=(v[0]-c.ax)*k;c.ay+=(v[1]-c.ay)*k}}}
 if(state==='serve'){const ap=aimPt(),rs=server==='p'?C:P,rd=server==='p'?'c':'p';if(ap){const dx=rs.x-ap.x,dy=rs.y-ap.y,d=Math.hypot(dx,dy);if(d<KO){rs.x=ap.x+(d>.01?dx/d*KO:KO);rs.y=ap.y+(d>.01?dy/d*KO:0);clampS(rs,rd)}}}
@@ -633,10 +634,10 @@ async function loadPeer(){if(!window.Peer)await new Promise((r,j)=>{const s=docu
 function matchTitle(d){return d.mode==='torneio'||d.phase==='ko'? 'Etapa':d.mode==='carreira'?'Rodada':'X1 online'}
 const SBURL='https://fbzhklglohqnclsqiggy.supabase.co',SBKEY='sb_publishable_nlvnUamNtY3oCv2tFe8EEQ_yJS-9NuF';let RTC=null;
 async function loadRT(){if(!window.supabase||!window.supabase.createClient)await new Promise((r,j)=>{const x=document.createElement('script');x.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';x.onload=r;x.onerror=j;document.head.appendChild(x)});if(!RTC)RTC=window.supabase.createClient(SBURL,SBKEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},realtime:{params:{eventsPerSecond:60}}});return RTC}
-function rtNet(id){const ch=RTC.channel(id,{config:{broadcast:{self:false}}});const emit=(t,d)=>{try{ch.send({type:'broadcast',event:t,payload:d})}catch(e){}return Promise.resolve()};return{ch,net:{emit,on:()=>{},leave:()=>{try{RTC.removeChannel(ch)}catch(e){}}}}}
+function rtNet(id){const ch=RTC.channel(id,{config:{broadcast:{self:false}}});const emit=(t,d)=>{try{return Promise.resolve(ch.send({type:'broadcast',event:t,payload:d})).then(status=>{if(status==='error'||status==='timed out')throw new Error('Não foi possível enviar a atualização da partida.')})}catch(e){return Promise.reject(e)}};return{ch,net:{emit,on:()=>{},leave:()=>{try{RTC.removeChannel(ch)}catch(e){}}}}}
 const failMatch=()=>{leaveNet();OT.match=null;reset();ovShow('<p>Não foi possível conectar. Tente novamente.</p>',[['Voltar à sala',otShow]],true,true)};
 async function hostMatch(id,info){OT.view=false;await loadRT();leaveNet();const {ch,net:n}=rtNet(id);net=n;let started=false;
- ch.on('broadcast',{event:'inp'},({payload})=>{if(net!==n)return;const d=payload||{};if(d.hello){if(!started){started=true;start(2);online='host';goal=5;OT.match=info;OT.done=false;OT.reported=false;OT.bot=false;tov.style.display='none'}return}if(!started)return;if(d.x!==undefined){ctl.c.vx=cl(+d.x||0,-1,1);ctl.c.vy=cl(+d.y||0,-1,1);ctl.c.kb=!!d.k}if(Number.isFinite(+d.px)&&Number.isFinite(+d.py)&&d.px!==undefined)window.__rp={x:+d.px,y:+d.py,mv:!!d.mv,t:performance.now()};if(d.b)press('c')});
+ ch.on('broadcast',{event:'inp'},({payload})=>{if(net!==n)return;const d=payload||{};if(d.hello){if(!started){started=true;start(2);online='host';goal=5;OT.match=info;OT.done=false;OT.reported=false;OT.bot=false;tov.style.display='none'}return}if(!started)return;applyRemoteInput(d)});
  ch.subscribe(st=>{if(net===n&&!started&&(st==='CHANNEL_ERROR'||st==='TIMED_OUT'))failMatch()});
  ovShow('<h2>'+matchTitle(OT.data)+'</h2><p>Aguardando o outro jogador clicar em Iniciar...</p>',[['Cancelar',()=>{leaveNet();OT.match=null;reset();otShow()}]],true,true)}
 async function guestMatch(id,info){OT.view=false;await loadRT();leaveNet();const {ch,net:n}=rtNet(id);net=n;
