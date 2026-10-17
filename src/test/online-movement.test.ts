@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 
-const game = readFileSync(new URL('../../public/jogo.html', import.meta.url), 'utf8');
+const game = readFileSync('public/jogo.html', 'utf8');
 function fn(name: string, next: string) {
   const start = game.indexOf(`function ${name}(`);
   return game.slice(start, game.indexOf(next, start));
