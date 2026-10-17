@@ -1,4 +1,5 @@
 # Correções solicitadas
+- [ ] Listar salas públicas nos modos online, com caixinha exclusiva do anfitrião e entrada sem convite/código; verificar privacidade e entrada real.
 - [x] Unificar movimento em X1, torneio e carreira online; X1 e torneio verificados com duas contas reais, incluindo anfitrião com animação pausada; carreira coberta pela simulação compartilhada, sem partida completa nesta verificação.
 - [x] Mover o atraso do saque para o lançamento, mantendo a duração e os bots.
 - [x] Ajustar orientação do contador vermelho no X1 local conforme PC/celular.
