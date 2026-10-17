@@ -11,6 +11,7 @@
 
 - The public game remains in `public/jogo.html`, embedded by the index route; preserve its existing canvas and HUD instead of rebuilding the interface.
 - Online mode rooms use the shared OT lobby and capability-protected host RPCs; both online menu entry points must reach this same mode selector to prevent bypassing the lobby.
+- Public room discovery queries only opt-in lobby metadata; visibility changes use the existing host-key-protected OT write path, and direct entry reuses `ot_join` so capacity and lobby rules remain shared.
 - Career tests submit authenticated profile results through `ot_career_test` before the host advances the shared competition; do not reuse the offline season advancement for shared matches.
 - Background selection persists in game settings and is applied to the document theme; never overwrite the saved choice during initialization.
 - Friend requests and room invitations use capability-authenticated database inbox RPCs, not PeerJS, so delivery works across networks and when recipients return; preserve the independent queued invitation dialog outside matches. PeerJS remains only for live gameplay and legacy compatibility.
