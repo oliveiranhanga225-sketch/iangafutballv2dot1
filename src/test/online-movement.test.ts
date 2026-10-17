@@ -27,7 +27,7 @@ function movement() {
 }
 
 describe('Online movement shared by X1, tournament and career', () => {
-  it.each(['x1', 'torneio', 'carreira'])('continues guest movement between packets in %s', () => {
+  it('continues guest movement between packets in the shared online simulation', () => {
     const { ctx, api, advance } = movement();
     api.input({ x: -1, y: 0, px: 200, py: 160, mv: 1 });
     api.tick(.05);
