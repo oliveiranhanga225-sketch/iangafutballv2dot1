@@ -1,4 +1,5 @@
 # Correções solicitadas
+- [ ] Corrigir e verificar o movimento dos dois jogadores em X1, torneio e carreira online.
 - [x] Mover o atraso do saque para o lançamento, mantendo a duração e os bots.
 - [x] Ajustar orientação do contador vermelho no X1 local conforme PC/celular.
 - [x] Exigir Iniciar dos dois jogadores nas partidas compartilhadas e mostrar Rodada/Etapa sem parênteses; início verificado com duas contas.
